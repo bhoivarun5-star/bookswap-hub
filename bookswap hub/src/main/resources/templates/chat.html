@@ -71,15 +71,17 @@
     <!-- ── Input Bar ───────────────────────────────────────────────────────── -->
     <footer class="chat-inputbar">
         <button type="button" class="chat-loc-btn" onclick="shareLocation()" title="Share your location">📍</button>
-        <input type="text" id="chatInput" class="chat-input" placeholder="Type a message…"
-               maxlength="1000" autocomplete="off" />
-        <button type="button" class="chat-send-btn" onclick="sendMessage()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-                 stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
-                <line x1="22" y1="2" x2="11" y2="13"/>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-            </svg>
-        </button>
+        <form id="chatForm" onsubmit="return false;" style="flex:1;display:flex;gap:0.4rem;min-width:0;">
+            <input type="text" id="chatInput" class="chat-input" placeholder="Type a message…"
+                   maxlength="1000" autocomplete="off" inputmode="text" enterkeyhint="send" />
+            <button type="submit" class="chat-send-btn" onclick="sendMessage()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                     stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+                    <line x1="22" y1="2" x2="11" y2="13"/>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+            </button>
+        </form>
     </footer>
 
     <script th:inline="javascript">
@@ -165,6 +167,25 @@
         // ── enter key ─────────────────────────────────────────────────────────
         input.addEventListener('keydown', e => {
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+        });
+
+        // ── mobile keyboard handling ──────────────────────────────────────────
+        // When virtual keyboard opens/closes, adjust layout so input stays visible
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', () => {
+                const vh = window.visualViewport.height;
+                document.querySelector('.chat-body').style.height = vh + 'px';
+                scrollBottom(false);
+            });
+            window.visualViewport.addEventListener('scroll', () => {
+                document.querySelector('.chat-inputbar').style.transform =
+                    'translateY(' + (window.visualViewport.offsetTop * -1) + 'px)';
+            });
+        }
+        // Focus input when tapping on it (ensure mobile gets focus)
+        input.addEventListener('touchend', e => {
+            e.preventDefault();
+            input.focus();
         });
 
         // ── poll new messages ─────────────────────────────────────────────────
