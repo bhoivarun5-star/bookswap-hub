@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title th:text="'Chat – ' + ${req.book.title} + ' – BookSwap Hub'">Chat</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+    <link rel="stylesheet" th:href="@{/css/books.css}" />
+    <script th:src="@{/js/theme.js}"></script>
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+</head>
+
+<body class="chat-body">
+
+    <!-- ── Top Bar ─────────────────────────────────────────────────────────── -->
+    <header class="chat-topbar">
+        <a class="chat-back-link" th:href="@{/my-requests}">← Back</a>
+
+        <div class="chat-header-info">
+            <div class="chat-avatar" th:text="${#strings.substring(otherUser.username, 0, 1).toUpperCase()}">U</div>
+            <div>
+                <div class="chat-header-name" th:text="${otherUser.username}">Username</div>
+                <div class="chat-header-sub">
+                    📚 <span th:text="${req.book.title}">Book</span>
+                    &nbsp;·&nbsp;
+                    ₹<span th:text="${req.book.price}">0</span>
+                </div>
+            </div>
+        </div>
+
+        <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle theme">☀️</button>
+    </header>
+
+    <!-- ── Message List ────────────────────────────────────────────────────── -->
+    <main class="chat-messages" id="chatMessages">
+
+        <div class="chat-date-chip">
+            <span>Conversation started · <span th:text="${#temporals.format(req.createdAt, 'dd MMM yyyy')}"></span></span>
+        </div>
+
+        <!-- Existing messages (server-rendered) -->
+        <th:block th:each="msg : ${messages}">
+            <div th:classappend="${msg.sender.username == currentUser.username} ? ' own' : ' other'"
+                 class="chat-bubble-row">
+                <div th:unless="${msg.sender.username == currentUser.username}"
+                     class="chat-bubble-avatar"
+                     th:text="${#strings.substring(msg.sender.username, 0, 1).toUpperCase()}">U</div>
+                <div class="chat-bubble">
+                    <div th:unless="${msg.sender.username == currentUser.username}"
+                         class="chat-bubble-sender"
+                         th:text="${msg.sender.username}">Sender</div>
+                    <!-- check if message is a location link -->
+                    <th:block th:if="${#strings.startsWith(msg.content, '📍')}">
+                        <span th:text="${'📍 Shared a location → '}"></span>
+                        <a th:href="${#strings.substringAfter(msg.content, '→ ')}"
+                           target="_blank" rel="noopener" class="chat-location-link"
+                           th:text="${'Open in Maps'}">Open in Maps</a>
+                    </th:block>
+                    <th:block th:unless="${#strings.startsWith(msg.content, '📍')}">
+                        <span th:text="${msg.content}"></span>
+                    </th:block>
+                    <div class="chat-bubble-time"
+                         th:text="${#temporals.format(msg.sentAt, 'hh:mm a')}">00:00</div>
+                </div>
+            </div>
+        </th:block>
+    </main>
+
+    <!-- ── Input Bar ───────────────────────────────────────────────────────── -->
+    <footer class="chat-inputbar">
+        <button type="button" class="chat-loc-btn" onclick="shareLocation()" title="Share your location">📍</button>
+        <input type="text" id="chatInput" class="chat-input" placeholder="Type a message…"
+               maxlength="1000" autocomplete="off" />
+        <button type="button" class="chat-send-btn" onclick="sendMessage()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                 stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+                <line x1="22" y1="2" x2="11" y2="13"/>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+        </button>
+    </footer>
+
+    <script th:inline="javascript">
+        const REQUEST_ID  = /*[[${req.id}]]*/ 0;
+        const CURRENT_USER = /*[[${currentUser.username}]]*/ '';
+        const OTHER_USER   = /*[[${otherUser.username}]]*/ '';
+        let lastMsgId = /*[[${messages.isEmpty() ? 0 : messages[messages.size()-1].id}]]*/ 0;
+
+        const msgContainer = document.getElementById('chatMessages');
+        const input = document.getElementById('chatInput');
+
+        // ── scroll to bottom ──────────────────────────────────────────────────
+        function scrollBottom(smooth) {
+            msgContainer.scrollTo({ top: msgContainer.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+        }
+        scrollBottom(false);
+
+        // ── render a single bubble ────────────────────────────────────────────
+        function renderBubble(msg) {
+            const row = document.createElement('div');
+            row.className = 'chat-bubble-row ' + (msg.own ? 'own' : 'other');
+
+            let avatarHtml = '';
+            if (!msg.own) {
+                avatarHtml = `<div class="chat-bubble-avatar">${msg.sender.charAt(0).toUpperCase()}</div>`;
+            }
+
+            let bodyHtml;
+            if (msg.content.startsWith('📍')) {
+                const parts = msg.content.split('→ ');
+                const link = parts[1] || '#';
+                bodyHtml = `📍 Shared a location → <a href="${link}" target="_blank" rel="noopener" class="chat-location-link">Open in Maps</a>`;
+            } else {
+                bodyHtml = escapeHtml(msg.content);
+            }
+
+            const senderLine = msg.own ? '' : `<div class="chat-bubble-sender">${escapeHtml(msg.sender)}</div>`;
+
+            row.innerHTML = `
+                ${avatarHtml}
+                <div class="chat-bubble">
+                    ${senderLine}
+                    <span>${bodyHtml}</span>
+                    <div class="chat-bubble-time">${msg.time}</div>
+                </div>`;
+            msgContainer.appendChild(row);
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        // ── send message ──────────────────────────────────────────────────────
+        async function sendMessage() {
+            const text = input.value.trim();
+            if (!text) return;
+            input.value = '';
+            input.focus();
+            await postMessage(text);
+        }
+
+        const CSRF_TOKEN  = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+        const CSRF_HEADER = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+        async function postMessage(content) {
+            try {
+                const fd = new FormData();
+                fd.append('content', content);
+                const res = await fetch(`/chat/${REQUEST_ID}/send`, {
+                    method: 'POST',
+                    body: fd,
+                    headers: { [CSRF_HEADER]: CSRF_TOKEN }
+                });
+                const msg = await res.json();
+                if (msg.id) {
+                    lastMsgId = msg.id;
+                    renderBubble(msg);
+                    scrollBottom(true);
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        // ── enter key ─────────────────────────────────────────────────────────
+        input.addEventListener('keydown', e => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+        });
+
+        // ── poll new messages ─────────────────────────────────────────────────
+        async function poll() {
+            try {
+                const res = await fetch(`/chat/${REQUEST_ID}/messages?after=${lastMsgId}`);
+                const msgs = await res.json();
+                if (Array.isArray(msgs) && msgs.length > 0) {
+                    const atBottom = msgContainer.scrollHeight - msgContainer.scrollTop - msgContainer.clientHeight < 60;
+                    msgs.forEach(m => { lastMsgId = m.id; renderBubble(m); });
+                    if (atBottom) scrollBottom(true);
+                }
+            } catch (e) { /* ignore */ }
+        }
+        setInterval(poll, 2000);
+
+        // ── location sharing ──────────────────────────────────────────────────
+        function shareLocation() {
+            if (!navigator.geolocation) {
+                alert('Geolocation is not supported by your browser.');
+                return;
+            }
+            const btn = document.querySelector('.chat-loc-btn');
+            btn.textContent = '⏳';
+            btn.disabled = true;
+            navigator.geolocation.getCurrentPosition(
+                pos => {
+                    btn.textContent = '📍'; btn.disabled = false;
+                    const { latitude: lat, longitude: lng } = pos.coords;
+                    const link = `https://www.google.com/maps?q=${lat},${lng}`;
+                    postMessage(`📍 Shared a location → ${link}`);
+                },
+                () => {
+                    btn.textContent = '📍'; btn.disabled = false;
+                    alert('Could not get your location. Please allow location access.');
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
+        }
+    </script>
+</body>
+
+</html>

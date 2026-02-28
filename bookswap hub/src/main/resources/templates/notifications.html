@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Notifications – BookSwap Hub</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+    <link rel="stylesheet" th:href="@{/css/books.css}" />
+    <script th:src="@{/js/theme.js}"></script>
+</head>
+
+<body>
+    <!-- Nav -->
+    <nav class="top-nav">
+        <div class="nav-container">
+            <a class="nav-brand" th:href="@{/books}">📚 BookSwap Hub</a>
+            <button class="hamburger-btn" aria-label="Menu"><span></span><span></span><span></span></button>
+            <div class="nav-overlay"></div>
+            <div class="nav-links">
+                <a class="nav-link" th:href="@{/books}">Browse</a>
+                <th:block th:if="${isLoggedIn}">
+                    <a class="nav-link" th:href="@{/books/new}">+ List Book</a>
+                    <a class="nav-link" th:href="@{/books/my-listings}">My Listings</a>
+                    <a class="nav-link" th:href="@{/my-requests}">My Requests</a>
+                    <a class="nav-link" th:href="@{/owner/requests}">Inbox</a>
+                    <a class="nav-link" th:href="@{/wishlist}">🔖 Wishlist</a>
+                    <a class="nav-link active notif-bell" th:href="@{/notifications}">
+                        🔔<span class="notif-badge"
+                              th:if="${unreadNotificationCount != null and unreadNotificationCount > 0}"
+                              th:text="${unreadNotificationCount}"></span>
+                    </a>
+                    <form th:action="@{/logout}" method="post" style="margin:0">
+                        <button type="submit" class="nav-link" style="background:none;cursor:pointer;border:none;">Sign
+                            Out</button>
+                    </form>
+                </th:block>
+                <th:block th:unless="${isLoggedIn}">
+                    <a class="nav-link" th:href="@{/login}">🔑 Login</a>
+                    <a class="nav-link accent" th:href="@{/register}">✨ Register</a>
+                </th:block>
+                <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle theme">☀️</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="page-wrapper">
+
+        <div class="page-header">
+            <h1>🔔 Notifications</h1>
+            <p>Your latest updates on buy requests and activity.</p>
+        </div>
+
+        <!-- Empty state -->
+        <div class="empty-state" th:if="${notifications == null or notifications.isEmpty()}">
+            <div class="empty-icon">🔕</div>
+            <h3>No notifications yet</h3>
+            <p>You'll be notified when your buy requests get approved or rejected.</p>
+        </div>
+
+        <!-- Notifications list -->
+        <div class="table-card" th:unless="${notifications == null or notifications.isEmpty()}">
+            <div th:each="notif : ${notifications}" class="notif-item"
+                 th:classappend="${!notif.read} ? ' notif-unread' : ''">
+                <div class="notif-icon">
+                    <span th:if="${#strings.startsWith(notif.message, '✅')}">✅</span>
+                    <span th:if="${#strings.startsWith(notif.message, '❌')}">❌</span>
+                    <span th:unless="${#strings.startsWith(notif.message, '✅') or #strings.startsWith(notif.message, '❌')}">🔔</span>
+                </div>
+                <div class="notif-content">
+                    <div class="notif-message" th:text="${notif.message}"></div>
+                    <div class="notif-time"
+                         th:text="${#temporals.format(notif.createdAt, 'dd MMM yyyy, hh:mm a')}"></div>
+                </div>
+                <div class="notif-dot" th:unless="${notif.read}"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <style>
+        .notif-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1.1rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative;
+            transition: background 0.2s;
+        }
+        .notif-item:last-child { border-bottom: none; }
+        .notif-item:hover { background: rgba(255,255,255,0.03); }
+        .notif-unread { background: rgba(124, 58, 237, 0.07); }
+        .notif-icon {
+            font-size: 1.4rem;
+            flex-shrink: 0;
+            margin-top: 0.1rem;
+        }
+        .notif-content { flex: 1; }
+        .notif-message {
+            font-size: 0.92rem;
+            color: #e2e8f0;
+            font-weight: 500;
+            line-height: 1.5;
+        }
+        .notif-time {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 0.3rem;
+        }
+        .notif-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: #7c3aed;
+            flex-shrink: 0;
+            margin-top: 0.4rem;
+            box-shadow: 0 0 6px rgba(124,58,237,0.7);
+        }
+        [data-theme="light"] .notif-item:hover { background: rgba(0,0,0,0.03); }
+        [data-theme="light"] .notif-unread { background: rgba(124, 58, 237, 0.06); }
+        [data-theme="light"] .notif-message { color: #1e1b4b; }
+        [data-theme="light"] .notif-time { color: #6b7280; }
+    </style>
+</body>
+</html>

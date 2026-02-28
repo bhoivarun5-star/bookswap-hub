@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Browse Books – BookSwap Hub</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+    <link rel="stylesheet" th:href="@{/css/books.css}" />
+    <script th:src="@{/js/theme.js}"></script>
+</head>
+
+<body>
+    <!-- Nav -->
+    <nav class="top-nav">
+        <div class="nav-container">
+            <a class="nav-brand" th:href="@{/books}">📚 BookSwap Hub</a>
+            <button class="hamburger-btn" aria-label="Menu"><span></span><span></span><span></span></button>
+            <div class="nav-overlay"></div>
+            <div class="nav-links">
+                <a class="nav-link active" th:href="@{/books}">Browse</a>
+                <th:block th:if="${isLoggedIn}">
+                    <a class="nav-link" th:href="@{/books/new}">+ List Book</a>
+                    <a class="nav-link" th:href="@{/books/my-listings}">My Listings</a>
+                    <a class="nav-link" th:href="@{/my-requests}">My Requests</a>
+                    <a class="nav-link" th:href="@{/owner/requests}">Inbox</a>
+                    <a class="nav-link" th:href="@{/wishlist}">🔖 Wishlist</a>
+                    <a class="nav-link notif-bell" th:href="@{/notifications}">
+                        🔔<span class="notif-badge"
+                              th:if="${unreadNotificationCount != null and unreadNotificationCount > 0}"
+                              th:text="${unreadNotificationCount}"></span>
+                    </a>
+                    <form th:action="@{/logout}" method="post" style="margin:0">
+                        <button type="submit" class="nav-link" style="background:none;cursor:pointer;border:none;">Sign
+                            Out</button>
+                    </form>
+                </th:block>
+                <th:block th:unless="${isLoggedIn}">
+                    <a class="nav-link" th:href="@{/login}">🔑 Login</a>
+                    <a class="nav-link accent" th:href="@{/register}">✨ Register</a>
+                </th:block>
+                <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle theme">☀️</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="page-wrapper">
+
+        <!-- Header -->
+        <div class="page-header">
+            <h1>📖 Browse Books</h1>
+            <p>Search, filter and discover books near you.</p>
+        </div>
+
+        <!-- ── Filter Bar ─────────────────────────────────────────────────── -->
+        <form method="get" th:action="@{/books}" id="filterForm"
+              style="margin-bottom:1.5rem; background:rgba(30,27,58,0.7);
+                     border:1px solid rgba(124,58,237,0.25); border-radius:16px;
+                     padding:1.4rem 1.6rem; backdrop-filter:blur(10px);">
+
+            <!-- Row 1: search + sort -->
+            <div style="display:flex; gap:1rem; flex-wrap:wrap; margin-bottom:1rem;">
+                <div style="flex:2; min-width:200px; position:relative;">
+                    <input type="text" name="q" id="searchInput"
+                           th:value="${q}"
+                           placeholder="🔍 Search by title or author…"
+                           style="width:100%; padding:0.65rem 1rem 0.65rem 1rem;
+                                  background:rgba(255,255,255,0.06); border:1px solid rgba(124,58,237,0.3);
+                                  border-radius:10px; color:#e2e8f0; font-size:0.9rem;
+                                  box-sizing:border-box; outline:none;" />
+                </div>
+                <div style="min-width:180px;">
+                    <select name="sort" id="sortSelect"
+                            style="width:100%; padding:0.65rem 1rem; background:rgba(255,255,255,0.06);
+                                   border:1px solid rgba(124,58,237,0.3); border-radius:10px;
+                                   color:#e2e8f0; font-size:0.9rem; cursor:pointer;">
+                        <option value="date_desc" th:selected="${sort == 'date_desc' or sort == null}">📅 Newest First</option>
+                        <option value="date_asc"  th:selected="${sort == 'date_asc'}">📅 Oldest First</option>
+                        <option value="price_asc" th:selected="${sort == 'price_asc'}">💰 Price: Low → High</option>
+                        <option value="price_desc"th:selected="${sort == 'price_desc'}">💰 Price: High → Low</option>
+                        <option value="distance"  th:selected="${sort == 'distance'}">📍 Distance: Nearest</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Row 2: category + condition + price + buttons -->
+            <div style="display:flex; gap:0.8rem; flex-wrap:wrap; align-items:flex-end;">
+                <!-- Category -->
+                <div style="flex:1; min-width:140px;">
+                    <label style="font-size:0.75rem; color:#94a3b8; display:block; margin-bottom:0.3rem;">Category</label>
+                    <select name="category"
+                            style="width:100%; padding:0.6rem 0.9rem; background:rgba(255,255,255,0.06);
+                                   border:1px solid rgba(124,58,237,0.25); border-radius:10px;
+                                   color:#e2e8f0; font-size:0.85rem; cursor:pointer;">
+                        <option value="">All Categories</option>
+                        <option th:each="cat : ${categories}"
+                                th:value="${cat.name()}"
+                                th:text="${cat.displayName}"
+                                th:selected="${selectedCategory != null and selectedCategory.name() == cat.name()}">
+                        </option>
+                    </select>
+                </div>
+                <!-- Condition -->
+                <div style="flex:1; min-width:120px;">
+                    <label style="font-size:0.75rem; color:#94a3b8; display:block; margin-bottom:0.3rem;">Condition</label>
+                    <select name="condition"
+                            style="width:100%; padding:0.6rem 0.9rem; background:rgba(255,255,255,0.06);
+                                   border:1px solid rgba(124,58,237,0.25); border-radius:10px;
+                                   color:#e2e8f0; font-size:0.85rem; cursor:pointer;">
+                        <option value="">All Conditions</option>
+                        <option th:each="cond : ${conditions}"
+                                th:value="${cond.name()}"
+                                th:text="${cond.displayName}"
+                                th:selected="${selectedCondition != null and selectedCondition.name() == cond.name()}">
+                        </option>
+                    </select>
+                </div>
+                <!-- Min Price -->
+                <div style="min-width:100px;">
+                    <label style="font-size:0.75rem; color:#94a3b8; display:block; margin-bottom:0.3rem;">Min ₹</label>
+                    <input type="number" name="minPrice" min="0" step="1"
+                           th:value="${minPrice}"
+                           placeholder="0"
+                           style="width:100%; padding:0.6rem 0.9rem; background:rgba(255,255,255,0.06);
+                                  border:1px solid rgba(124,58,237,0.25); border-radius:10px;
+                                  color:#e2e8f0; font-size:0.85rem; box-sizing:border-box;" />
+                </div>
+                <!-- Max Price -->
+                <div style="min-width:100px;">
+                    <label style="font-size:0.75rem; color:#94a3b8; display:block; margin-bottom:0.3rem;">Max ₹</label>
+                    <input type="number" name="maxPrice" min="0" step="1"
+                           th:value="${maxPrice}"
+                           placeholder="Any"
+                           style="width:100%; padding:0.6rem 0.9rem; background:rgba(255,255,255,0.06);
+                                  border:1px solid rgba(124,58,237,0.25); border-radius:10px;
+                                  color:#e2e8f0; font-size:0.85rem; box-sizing:border-box;" />
+                </div>
+                <!-- Buttons -->
+                <div style="display:flex; gap:0.5rem; align-items:flex-end;">
+                    <button type="submit" class="btn btn-primary"
+                            style="padding:0.6rem 1.3rem; border-radius:10px; font-size:0.85rem; height:38px; white-space:nowrap;">
+                        Apply
+                    </button>
+                    <a th:href="@{/books}" class="btn btn-outline"
+                       style="padding:0.6rem 1rem; border-radius:10px; font-size:0.85rem; height:38px; display:inline-flex; align-items:center; white-space:nowrap;">
+                        Clear
+                    </a>
+                </div>
+            </div>
+        </form>
+
+        <!-- Location Bar -->
+        <div class="location-bar" id="locationBar"
+            style="margin-bottom:2rem; padding:1.25rem; background:rgba(30,27,58,0.6); border-radius:15px; border:1px solid rgba(124,58,237,0.2); backdrop-filter:blur(10px);">
+            <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+                <div style="flex:1;">
+                    <div style="font-size:0.9rem; color:#94a3b8; margin-bottom:0.3rem;">📍 Your Current Location:</div>
+                    <div id="userLocText" style="font-weight:600; color:#e2e8f0; font-size:1rem;">Detecting location...
+                    </div>
+                </div>
+                <button type="button" class="btn btn-outline" id="detectLocBtn" onclick="initLocation()"
+                    style="padding:0.6rem 1.2rem; min-width:160px; border-radius:10px;">
+                    🔄 Update Location
+                </button>
+            </div>
+            <div id="locStatus" style="font-size:0.8rem; margin-top:0.5rem; display:none;"></div>
+        </div>
+
+        <!-- Result count -->
+        <div style="margin-bottom:1rem; color:#94a3b8; font-size:0.88rem;" th:if="${totalBooks != null}">
+            <span th:text="${totalBooks}">0</span> book<span th:if="${totalBooks != 1}">s</span> found
+            <span th:if="${q != null and !q.isEmpty()}"> for &ldquo;<strong th:text="${q}" style="color:#a78bfa"></strong>&rdquo;</span>
+        </div>
+
+        <!-- Book Cards -->
+        <div class="books-grid" id="booksGrid">
+            <a th:each="book : ${books}" th:href="@{/books/{id}(id=${book.id})}" class="book-card"
+               th:data-lat="${book.latitude}" th:data-lng="${book.longitude}"
+               th:data-price="${book.price}" th:data-date="${book.createdAt}">
+
+                <!-- Image -->
+                <div class="book-card-image">
+                    <img th:if="${book.imagePath != null}" th:src="@{/uploads/{img}(img=${book.imagePath})}"
+                        th:alt="${book.title}" />
+                    <span th:unless="${book.imagePath != null}">📚</span>
+                </div>
+
+                <!-- Body -->
+                <div class="book-card-body">
+                    <div class="book-card-title" th:text="${book.title}">Title</div>
+                    <div class="book-card-author">by <span th:text="${book.author}">Author</span></div>
+
+                    <div class="book-card-meta">
+                        <span class="book-price" th:text="'₹' + ${book.price}">₹0</span>
+                        <span class="badge badge-category" th:text="${book.category.displayName}">Category</span>
+                        <span class="badge" th:classappend="${book.condition.name() == 'NEW'} ? 'badge-new' :
+                                          (${book.condition.name() == 'LIKE_NEW'} ? 'badge-like-new' : 'badge-old')"
+                            th:text="${book.condition.displayName}">Condition</span>
+                    </div>
+
+                    <!-- Distance badge — filled by JS -->
+                    <div class="distance-badge" th:if="${book.latitude != null}" th:data-lat="${book.latitude}"
+                        th:data-lng="${book.longitude}"
+                        style="margin-top: 0.5rem; background:rgba(124,58,237,0.15); border-radius:8px; padding:0.4rem 0.8rem; display:inline-flex; align-items:center; gap:0.4rem; color:#c4b5fd; font-weight:500;">
+                        📍 <span class="dist-label text-sparkle">Calculating distance…</span>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Empty state -->
+        <div class="empty-state" th:if="${books == null or books.isEmpty()}">
+            <div class="empty-icon">🔍</div>
+            <h3>No books found</h3>
+            <p>Try adjusting your filters or <a th:href="@{/books}" style="color:#a78bfa">clear all filters</a>.</p>
+        </div>
+
+    </div>
+
+    <!-- Distance calculator (Haversine in JS) -->
+    <script>
+        // ── Active sort from server ────────────────────────────────────────────
+        const ACTIVE_SORT = /*[[${sort}]]*/ 'date_desc';
+
+        function setStatus(msg, color) {
+            const el = document.getElementById('locStatus');
+            el.style.display = 'block'; el.style.color = color || '#94a3b8'; el.innerHTML = msg;
+        }
+
+        function haversine(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) ** 2 +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) ** 2;
+            return (R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(1);
+        }
+
+        function updateDistances(userLat, userLng, address) {
+            if (address) document.getElementById('userLocText').textContent = address;
+            else document.getElementById('userLocText').textContent = `${parseFloat(userLat).toFixed(4)}, ${parseFloat(userLng).toFixed(4)}`;
+
+            localStorage.setItem('userLat', userLat);
+            localStorage.setItem('userLng', userLng);
+            if (address) localStorage.setItem('userAddress', address);
+
+            document.querySelectorAll('.distance-badge').forEach(badge => {
+                const bookLat = parseFloat(badge.dataset.lat);
+                const bookLng = parseFloat(badge.dataset.lng);
+                const dist = haversine(userLat, userLng, bookLat, bookLng);
+                badge.querySelector('.dist-label').textContent = dist + ' km away from you';
+                badge.closest('.book-card').dataset.dist = dist;
+            });
+            setStatus('✅ Distances updated based on your location.', '#6ee7b7');
+
+            // Client-side distance sort
+            if (ACTIVE_SORT === 'distance') {
+                sortCardsByDistance();
+            }
+        }
+
+        function sortCardsByDistance() {
+            const grid = document.getElementById('booksGrid');
+            const cards = Array.from(grid.querySelectorAll('.book-card'));
+            cards.sort((a, b) => {
+                const da = parseFloat(a.dataset.dist ?? 99999);
+                const db = parseFloat(b.dataset.dist ?? 99999);
+                return da - db;
+            });
+            cards.forEach(c => grid.appendChild(c));
+        }
+
+        async function locateByIP() {
+            setStatus('🌐 GPS unavailable. Trying IP-based location...', '#c4b5fd');
+            try {
+                const res = await fetch('https://ipapi.co/json/');
+                const data = await res.json();
+                if (!data.latitude) throw new Error();
+                updateDistances(data.latitude, data.longitude, `${data.city}, ${data.region} (IP-based)`);
+            } catch {
+                setStatus('❌ Could not detect location. Distances won\'t show.', '#fca5a5');
+                document.getElementById('userLocText').textContent = 'Location not set';
+                document.querySelectorAll('.dist-label').forEach(el => el.textContent = 'Location unknown');
+            }
+        }
+
+        function initLocation() {
+            const btn = document.getElementById('detectLocBtn');
+            btn.textContent = '⏳ Detecting...';
+            setStatus('📡 Requesting location access...', '#c4b5fd');
+
+            const options = { timeout: 8000, enableHighAccuracy: true };
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    async pos => {
+                        const lat = pos.coords.latitude, lng = pos.coords.longitude;
+                        try {
+                            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`, { headers: { 'Accept-Language': 'en' } });
+                            const data = await res.json();
+                            updateDistances(lat, lng, data.address.city || data.address.town || data.address.village || 'Nearby Area');
+                        } catch {
+                            updateDistances(lat, lng);
+                        }
+                        btn.textContent = '🔄 Update Location';
+                    },
+                    err => {
+                        locateByIP();
+                        btn.textContent = '🔄 Update Location';
+                    },
+                    options
+                );
+            } else {
+                locateByIP();
+                btn.textContent = '🔄 Update Location';
+            }
+        }
+
+        // ── Light-theme fix for selects / inputs ──────────────────────────────
+        function applyInputTheme() {
+            const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+            const color = isLight ? '#1e1b4b' : '#e2e8f0';
+            const bg    = isLight ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.06)';
+            document.querySelectorAll('#filterForm select, #filterForm input').forEach(el => {
+                el.style.color = color;
+                el.style.background = bg;
+            });
+        }
+
+        // Auto-run on load
+        window.addEventListener('DOMContentLoaded', () => {
+            applyInputTheme();
+            const savedLat = localStorage.getItem('userLat');
+            const savedLng = localStorage.getItem('userLng');
+            const savedAddr = localStorage.getItem('userAddress');
+
+            if (savedLat && savedLng) {
+                updateDistances(savedLat, savedLng, savedAddr);
+            } else {
+                initLocation();
+            }
+
+            // Re-apply theme on toggle
+            const themeBtn = document.querySelector('.theme-toggle-btn');
+            if (themeBtn) themeBtn.addEventListener('click', () => setTimeout(applyInputTheme, 50));
+        });
+    </script>
+</body>
+
+</html>

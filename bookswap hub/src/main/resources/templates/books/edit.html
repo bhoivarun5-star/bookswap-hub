@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Edit Book – BookSwap Hub</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+    <link rel="stylesheet" th:href="@{/css/books.css}" />
+    <script th:src="@{/js/theme.js}"></script>
+</head>
+
+<body>
+    <!-- Nav -->
+    <nav class="top-nav">
+        <div class="nav-container">
+            <a class="nav-brand" th:href="@{/books}">📚 BookSwap Hub</a>
+            <button class="hamburger-btn" aria-label="Menu"><span></span><span></span><span></span></button>
+            <div class="nav-overlay"></div>
+            <div class="nav-links">
+                <a class="nav-link" th:href="@{/books}">Browse</a>
+                <th:block th:if="${isLoggedIn}">
+                    <a class="nav-link" th:href="@{/books/new}">+ List Book</a>
+                    <a class="nav-link" th:href="@{/books/my-listings}">My Listings</a>
+                    <a class="nav-link" th:href="@{/my-requests}">My Requests</a>
+                    <a class="nav-link" th:href="@{/owner/requests}">Inbox</a>
+                    <a class="nav-link" th:href="@{/wishlist}">🔖 Wishlist</a>
+                    <a class="nav-link notif-bell" th:href="@{/notifications}">
+                        🔔<span class="notif-badge"
+                              th:if="${unreadNotificationCount != null and unreadNotificationCount > 0}"
+                              th:text="${unreadNotificationCount}"></span>
+                    </a>
+                    <form th:action="@{/logout}" method="post" style="margin:0">
+                        <button type="submit" class="nav-link" style="background:none;cursor:pointer;border:none;">Sign
+                            Out</button>
+                    </form>
+                </th:block>
+                <th:block th:unless="${isLoggedIn}">
+                    <a class="nav-link" th:href="@{/login}">🔑 Login</a>
+                    <a class="nav-link accent" th:href="@{/register}">✨ Register</a>
+                </th:block>
+                <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle theme">☀️</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="page-wrapper">
+
+        <div class="form-card">
+            <h2>✏️ Edit Book</h2>
+
+            <div class="flash-error" th:if="${errorMessage}">❌ <span th:text="${errorMessage}"></span></div>
+
+            <form th:action="@{/books/{id}/edit(id=${book.id})}" method="post" enctype="multipart/form-data">
+
+                <!-- Current image preview -->
+                <div class="form-group" th:if="${book.imagePath != null}">
+                    <label>Current Image</label>
+                    <img th:src="@{/uploads/{img}(img=${book.imagePath})}" alt="Current book image"
+                        style="width:120px;height:120px;object-fit:cover;border-radius:10px;border:1px solid rgba(255,255,255,0.1)" />
+                </div>
+
+                <!-- New Image -->
+                <div class="form-group">
+                    <label>Replace Image (optional)</label>
+                    <div class="image-upload" id="imageUploadArea" onclick="openImagePicker('imageInput', 'imageLabel')">
+                        <div class="upload-icon" id="uploadIcon">🖼️</div>
+                        <img id="imagePreview" src="" alt="Preview"
+                            style="display:none;max-width:100%;max-height:220px;border-radius:10px;margin-bottom:0.5rem;object-fit:contain;pointer-events:none;" />
+                        <p id="imageLabel">Click to upload a new image</p>
+                        <input type="file" id="imageInput" name="image" accept="image/*"
+                            onchange="setImageLabel('imageLabel', this)" />
+                    </div>
+                    <button type="button" id="changeImageBtn"
+                        onclick="openImagePicker('imageInput', 'imageLabel')"
+                        style="display:none;margin-top:0.6rem;padding:0.4rem 1rem;border-radius:8px;
+                               background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.45);
+                               color:#c4b5fd;font-size:0.82rem;font-weight:600;cursor:pointer;
+                               font-family:inherit;transition:background 0.2s;"
+                        onmouseover="this.style.background='rgba(124,58,237,0.28)'"
+                        onmouseout="this.style.background='rgba(124,58,237,0.15)'">✏️ Change Image</button>
+                </div>
+
+                <!-- Title + Author -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="title">Book Title *</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="title" name="title" class="form-control" th:value="${book.title}"
+                                required />
+                            <span class="input-icon">📖</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="author">Author *</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="author" name="author" class="form-control" th:value="${book.author}"
+                                required />
+                            <span class="input-icon">✍️</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="form-group">
+                    <label for="description">Description *</label>
+                    <div class="input-wrapper">
+                        <textarea id="description" name="description" class="form-control" th:text="${book.description}"
+                            required></textarea>
+                    </div>
+                </div>
+
+                <!-- Price + Category -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="price">Price (₹) *</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="price" name="price" class="form-control" th:value="${book.price}"
+                                min="0" step="0.01" required />
+                            <span class="input-icon">💰</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="category">Category *</label>
+                        <select id="category" name="category" class="form-select" required>
+                            <option th:each="cat : ${categories}" th:value="${cat.name()}" th:text="${cat.displayName}"
+                                th:selected="${cat == book.category}">Category</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="condition">Condition *</label>
+                    <select id="condition" name="condition" class="form-select" required>
+                        <option th:each="cond : ${conditions}" th:value="${cond.name()}" th:text="${cond.displayName}"
+                            th:selected="${cond == book.condition}">Condition</option>
+                    </select>
+                </div>
+
+                <!-- ── Location ─────────────────────────────────────────────────── -->
+                <div class="form-group">
+                    <label>Update Location (optional)</label>
+                    <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem;">
+                        <div class="input-wrapper" style="flex:1;margin-bottom:0">
+                            <input type="text" id="address" name="address" class="form-control"
+                                th:value="${book.address}" placeholder="Type area / address..." autocomplete="off"
+                                oninput="onAddressInput()" />
+                            <span class="input-icon">📍</span>
+                        </div>
+                        <button type="button" class="btn-location" id="searchBtn" onclick="searchAddress()">🔍
+                            Search</button>
+                        <button type="button" class="btn-location" id="gpsBtn" onclick="fetchGPS()">📡 GPS</button>
+                    </div>
+
+                    <ul id="suggestions" style="list-style:none;margin:0;padding:0;
+                    background:rgba(30,27,58,0.98);border:1px solid rgba(124,58,237,0.3);
+                    border-radius:10px;display:none;max-height:200px;overflow-y:auto;z-index:100;"></ul>
+
+                    <input type="hidden" id="latitude" name="latitude" th:value="${book.latitude}" />
+                    <input type="hidden" id="longitude" name="longitude" th:value="${book.longitude}" />
+                    <div id="locStatus" style="font-size:0.82rem;margin-top:0.4rem;display:none;"></div>
+                </div>
+
+                <div style="display:flex; gap:1rem; margin-top:1.5rem; flex-wrap:wrap;">
+                    <button type="submit" class="btn btn-primary" style="flex:1">💾 Save Changes</button>
+                    <a th:href="@{/books/my-listings}" class="btn btn-outline" style="flex:1">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function setStatus(msg, color) {
+            const el = document.getElementById('locStatus');
+            el.style.display = 'block';
+            el.style.color = color || '#94a3b8';
+            el.innerHTML = msg;
+        }
+
+        function showSuggestions(results) {
+            const ul = document.getElementById('suggestions');
+            ul.innerHTML = '';
+            if (!results.length) { ul.style.display = 'none'; return; }
+            results.forEach(r => {
+                const li = document.createElement('li');
+                li.textContent = r.display_name;
+                li.style.cssText = 'padding:0.65rem 1rem;cursor:pointer;color:#cbd5e1;font-size:0.85rem;border-bottom:1px solid rgba(255,255,255,0.06);';
+                li.onmouseenter = () => li.style.background = 'rgba(124,58,237,0.15)';
+                li.onmouseleave = () => li.style.background = '';
+                li.onclick = () => selectResult(r);
+                ul.appendChild(li);
+            });
+            ul.style.display = 'block';
+        }
+
+        function selectResult(r) {
+            document.getElementById('address').value = r.display_name;
+            document.getElementById('latitude').value = r.lat;
+            document.getElementById('longitude').value = r.lon;
+            document.getElementById('suggestions').style.display = 'none';
+            setStatus(`✅ Location updated!`, '#6ee7b7');
+        }
+
+        function onAddressInput() {
+            document.getElementById('suggestions').style.display = 'none';
+            document.getElementById('latitude').value = '';
+            document.getElementById('longitude').value = '';
+        }
+
+        async function searchAddress() {
+            const query = document.getElementById('address').value.trim();
+            if (!query) return;
+            const btn = document.getElementById('searchBtn');
+            btn.textContent = '⏳'; btn.disabled = true;
+            setStatus('🔍 Searching...', '#c4b5fd');
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`, { headers: { 'Accept-Language': 'en' } });
+                const data = await res.json();
+                if (!data.length) setStatus('❌ No results.', '#fca5a5');
+                else if (data.length === 1) selectResult(data[0]);
+                else { showSuggestions(data); setStatus('📋 Select from list.', '#c4b5fd'); }
+            } catch { setStatus('❌ Search failed.', '#fca5a5'); }
+            btn.textContent = '🔍 Search'; btn.disabled = false;
+        }
+
+        async function fetchGPS() {
+            const btn = document.getElementById('gpsBtn');
+            btn.textContent = '⏳'; btn.disabled = true;
+            setStatus('📡 Requesting GPS...', '#c4b5fd');
+            if (!navigator.geolocation) {
+                setStatus('❌ GPS not supported.', '#fca5a5');
+                btn.textContent = '📡 GPS'; btn.disabled = false; return;
+            }
+            const options = { timeout: 10000, enableHighAccuracy: true };
+            const success = async pos => {
+                const lat = pos.coords.latitude, lng = pos.coords.longitude;
+                document.getElementById('latitude').value = lat;
+                document.getElementById('longitude').value = lng;
+                setStatus('🔄 Fetching address...', '#c4b5fd');
+                try {
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`, { headers: { 'Accept-Language': 'en' } });
+                    const data = await res.json();
+                    document.getElementById('address').value = data.display_name || `${lat}, ${lng}`;
+                    setStatus('✅ Location updated!', '#6ee7b7');
+                } catch { setStatus('✅ Coordinates saved.', '#6ee7b7'); }
+                btn.textContent = '📡 GPS'; btn.disabled = false;
+            };
+            const error = err => {
+                if (options.enableHighAccuracy) {
+                    options.enableHighAccuracy = false;
+                    navigator.geolocation.getCurrentPosition(success, finalError, options);
+                } else finalError(err);
+            };
+            const finalError = err => {
+                btn.textContent = '📡 GPS'; btn.disabled = false;
+                let msg = '❌ GPS failed. ';
+                if (err.code === 1) msg += 'Allow location in browser.';
+                else if (err.code === 2) msg += 'Windows Location Service is OFF.';
+                else msg += 'Timeout - try Search.';
+                setStatus(msg, '#fca5a5');
+            };
+            navigator.geolocation.getCurrentPosition(success, error, options);
+        }
+    </script>
+
+    <!-- Image Source Picker Modal -->
+    <div id="imagePickerModal" class="img-picker-overlay" onclick="if(event.target===this)closeImagePicker()">
+        <div class="img-picker-sheet">
+            <h3 class="img-picker-title">Upload Book Image</h3>
+            <p class="img-picker-subtitle">Choose how you'd like to add your book photo</p>
+            <div class="img-picker-options">
+                <button type="button" class="img-picker-btn" onclick="pickFromFile()">
+                    <span class="img-picker-icon">📁</span>
+                    <span class="img-picker-label">Choose from Files</span>
+                    <span class="img-picker-desc">Select an existing photo</span>
+                </button>
+                <button type="button" class="img-picker-btn" onclick="pickFromCamera()">
+                    <span class="img-picker-icon">📷</span>
+                    <span class="img-picker-label">Take a Photo</span>
+                    <span class="img-picker-desc">Use your camera directly</span>
+                </button>
+            </div>
+            <button type="button" class="img-picker-cancel" onclick="closeImagePicker()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Live Camera Modal -->
+    <div id="cameraModal" class="camera-overlay" onclick="if(event.target===this)closeCameraModal()">
+        <div class="camera-sheet">
+            <div class="camera-header">
+                <button type="button" class="camera-back-btn" onclick="closeCameraModal(); document.getElementById('imagePickerModal').style.display='flex';">← Back</button>
+                <h3 class="camera-title">📷 Take a Photo</h3>
+                <button type="button" class="camera-flip-btn" onclick="flipCamera()" title="Switch camera">🔄</button>
+            </div>
+            <div class="camera-viewport">
+                <video id="cameraStream" autoplay playsinline muted></video>
+                <canvas id="cameraCanvas" style="display:none;"></canvas>
+                <img id="capturedPreview" class="captured-preview" style="display:none;" alt="Captured photo" />
+            </div>
+            <div class="camera-controls" id="captureControls">
+                <button type="button" class="camera-capture-btn" onclick="capturePhoto()">📸 Capture</button>
+            </div>
+            <div class="camera-controls" id="previewControls" style="display:none;">
+                <button type="button" class="camera-retake-btn" onclick="retakePhoto()">↩ Retake</button>
+                <button type="button" class="camera-use-btn" onclick="useCapturedPhoto()">✅ Use Photo</button>
+            </div>
+            <div id="cameraError" class="camera-error" style="display:none;"></div>
+        </div>
+    </div>
+
+    <script>
+        let _imgInputId, _imgLabelId;
+        let _cameraStream = null;
+        let _facingMode = 'environment';
+
+        /* ── Image source picker ── */
+        function openImagePicker(inputId, labelId) {
+            _imgInputId = inputId;
+            _imgLabelId = labelId;
+            document.getElementById('imagePickerModal').style.display = 'flex';
+        }
+        function closeImagePicker() {
+            document.getElementById('imagePickerModal').style.display = 'none';
+        }
+        function pickFromFile() {
+            closeImagePicker();
+            const input = document.getElementById(_imgInputId);
+            input.removeAttribute('capture');
+            input.click();
+        }
+        function setImageLabel(labelId, input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                document.getElementById(labelId).textContent = '✅ ' + file.name;
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const preview = document.getElementById('imagePreview');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    document.getElementById('uploadIcon').style.display = 'none';
+                    document.getElementById('imageUploadArea').style.borderStyle = 'solid';
+                    document.getElementById('imageUploadArea').style.borderColor = 'rgba(124,58,237,0.7)';
+                    document.getElementById('imageUploadArea').style.cursor = 'default';
+                    document.getElementById('imageUploadArea').onclick = null;
+                    document.getElementById('changeImageBtn').style.display = 'inline-block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        /* ── Camera ── */
+        async function pickFromCamera() {
+            closeImagePicker();
+            const modal = document.getElementById('cameraModal');
+            modal.style.display = 'flex';
+            document.getElementById('cameraError').style.display = 'none';
+            document.getElementById('captureControls').style.display = 'flex';
+            document.getElementById('previewControls').style.display = 'none';
+            document.getElementById('cameraStream').style.display = 'block';
+            document.getElementById('capturedPreview').style.display = 'none';
+            await startCameraStream();
+        }
+
+        async function startCameraStream() {
+            stopCameraStream();
+            try {
+                _cameraStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: _facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
+                    audio: false
+                });
+                document.getElementById('cameraStream').srcObject = _cameraStream;
+            } catch (err) {
+                let msg;
+                if (err.name === 'NotAllowedError')
+                    msg = '🚫 Camera permission denied. Please allow camera access in your browser settings.';
+                else if (err.name === 'NotFoundError')
+                    msg = '📷 No camera found on this device.';
+                else
+                    msg = '⚠️ Could not access camera: ' + err.message;
+                const errEl = document.getElementById('cameraError');
+                errEl.textContent = msg;
+                errEl.style.display = 'block';
+                document.getElementById('captureControls').style.display = 'none';
+            }
+        }
+
+        function stopCameraStream() {
+            if (_cameraStream) {
+                _cameraStream.getTracks().forEach(t => t.stop());
+                _cameraStream = null;
+            }
+        }
+
+        function closeCameraModal() {
+            stopCameraStream();
+            document.getElementById('cameraModal').style.display = 'none';
+        }
+
+        async function flipCamera() {
+            _facingMode = _facingMode === 'environment' ? 'user' : 'environment';
+            await startCameraStream();
+        }
+
+        function capturePhoto() {
+            const video = document.getElementById('cameraStream');
+            const canvas = document.getElementById('cameraCanvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            document.getElementById('capturedPreview').src = canvas.toDataURL('image/jpeg', 0.92);
+            document.getElementById('capturedPreview').style.display = 'block';
+            document.getElementById('cameraStream').style.display = 'none';
+            document.getElementById('captureControls').style.display = 'none';
+            document.getElementById('previewControls').style.display = 'flex';
+            stopCameraStream();
+        }
+
+        function retakePhoto() {
+            document.getElementById('capturedPreview').style.display = 'none';
+            document.getElementById('cameraStream').style.display = 'block';
+            document.getElementById('captureControls').style.display = 'flex';
+            document.getElementById('previewControls').style.display = 'none';
+            startCameraStream();
+        }
+
+        function useCapturedPhoto() {
+            const canvas = document.getElementById('cameraCanvas');
+            canvas.toBlob(blob => {
+                const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                const input = document.getElementById(_imgInputId);
+                input.files = dt.files;
+                setImageLabel(_imgLabelId, input);
+                closeCameraModal();
+            }, 'image/jpeg', 0.92);
+        }
+    </script>
+</body>
+
+</html>

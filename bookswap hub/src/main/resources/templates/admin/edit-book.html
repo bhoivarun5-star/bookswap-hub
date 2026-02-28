@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Edit Book – Admin Panel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+    <link rel="stylesheet" th:href="@{/css/books.css}" />
+    <style>
+        .admin-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            color: #fca5a5;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 0.25rem 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Nav -->
+    <nav class="top-nav">
+        <div class="nav-container">
+            <a class="nav-brand" th:href="@{/books}">📚 BookSwap Hub</a>
+            <button class="hamburger-btn" aria-label="Menu"><span></span><span></span><span></span></button>
+            <div class="nav-overlay"></div>
+            <div class="nav-links">
+                <a class="nav-link" th:href="@{/admin/panel}">🛡️ Admin Panel</a>
+                <a class="nav-link" th:href="@{/books}">Browse</a>
+                <form th:action="@{/logout}" method="post" style="margin:0">
+                    <button type="submit" class="nav-link" style="background:none;cursor:pointer;border:none;">Sign
+                        Out</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <div class="page-wrapper">
+
+        <div class="form-card">
+            <div class="admin-badge">🛡️ Admin Edit</div>
+            <h2>✏️ Edit Book</h2>
+
+            <div class="flash-error" th:if="${errorMessage}">❌ <span th:text="${errorMessage}"></span></div>
+
+            <form th:action="@{/admin/books/{id}/edit(id=${book.id})}" method="post" enctype="multipart/form-data">
+
+                <!-- Current image preview -->
+                <div class="form-group" th:if="${book.imagePath != null}">
+                    <label>Current Image</label>
+                    <img th:src="@{/uploads/{img}(img=${book.imagePath})}" alt="Book image"
+                        style="width:120px;height:120px;object-fit:cover;border-radius:10px;border:1px solid rgba(255,255,255,0.1)" />
+                </div>
+
+                <!-- Replace Image -->
+                <div class="form-group">
+                    <label>Replace Image (optional)</label>
+                    <div class="image-upload" onclick="document.getElementById('imageInput').click()">
+                        <div class="upload-icon">🖼️</div>
+                        <p id="imageLabel">Click to upload a new image</p>
+                        <input type="file" id="imageInput" name="image" accept="image/*"
+                            onchange="document.getElementById('imageLabel').textContent = this.files[0].name" />
+                    </div>
+                </div>
+
+                <!-- Title + Author -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="title">Book Title *</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="title" name="title" class="form-control" th:value="${book.title}"
+                                required />
+                            <span class="input-icon">📖</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="author">Author *</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="author" name="author" class="form-control" th:value="${book.author}"
+                                required />
+                            <span class="input-icon">✍️</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="form-group">
+                    <label for="description">Description *</label>
+                    <div class="input-wrapper">
+                        <textarea id="description" name="description" class="form-control" th:text="${book.description}"
+                            required></textarea>
+                    </div>
+                </div>
+
+                <!-- Price + Category -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="price">Price (₹) *</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="price" name="price" class="form-control" th:value="${book.price}"
+                                min="0" step="0.01" required />
+                            <span class="input-icon">💰</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="category">Category *</label>
+                        <select id="category" name="category" class="form-select" required>
+                            <option th:each="cat : ${categories}" th:value="${cat.name()}" th:text="${cat.displayName}"
+                                th:selected="${cat == book.category}">Category</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="condition">Condition *</label>
+                    <select id="condition" name="condition" class="form-select" required>
+                        <option th:each="cond : ${conditions}" th:value="${cond.name()}" th:text="${cond.displayName}"
+                            th:selected="${cond == book.condition}">Condition</option>
+                    </select>
+                </div>
+
+                <div style="display:flex; gap:1rem; margin-top:1.5rem; flex-wrap:wrap;">
+                    <button type="submit" class="btn btn-primary" style="flex:1">💾 Save Changes</button>
+                    <a th:href="@{/admin/panel}" class="btn btn-outline" style="flex:1">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+
+</html>

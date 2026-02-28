@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Requests – BookSwap Hub</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+    <link rel="stylesheet" th:href="@{/css/books.css}" />
+</head>
+
+<body>
+    <!-- Nav -->
+    <nav class="top-nav">
+        <div class="nav-container">
+            <a class="nav-brand" th:href="@{/books}">📚 BookSwap Hub</a>
+            <button class="hamburger-btn" aria-label="Menu"><span></span><span></span><span></span></button>
+            <div class="nav-overlay"></div>
+            <div class="nav-links">
+                <a class="nav-link" th:href="@{/books}">Browse</a>
+                <th:block th:if="${isLoggedIn}">
+                    <a class="nav-link" th:href="@{/books/new}">+ List Book</a>
+                    <a class="nav-link" th:href="@{/books/my-listings}">My Listings</a>
+                    <a class="nav-link active" th:href="@{/my-requests}">My Requests</a>
+                    <a class="nav-link" th:href="@{/owner/requests}">Inbox</a>
+                    <a class="nav-link" th:href="@{/wishlist}">🔖 Wishlist</a>
+                    <a class="nav-link notif-bell" th:href="@{/notifications}">
+                        🔔<span class="notif-badge"
+                              th:if="${unreadNotificationCount != null and unreadNotificationCount > 0}"
+                              th:text="${unreadNotificationCount}"></span>
+                    </a>
+                    <form th:action="@{/logout}" method="post" style="margin:0">
+                        <button type="submit" class="nav-link" style="background:none;cursor:pointer;border:none;">Sign
+                            Out</button>
+                    </form>
+                </th:block>
+                <th:block th:unless="${isLoggedIn}">
+                    <a class="nav-link" th:href="@{/login}">🔑 Login</a>
+                    <a class="nav-link accent" th:href="@{/register}">✨ Register</a>
+                </th:block>
+                <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle theme">☀️</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="page-wrapper">
+
+        <div class="page-header">
+            <h1>📩 My Buy Requests</h1>
+            <p>Books you've requested to purchase and their current status.</p>
+        </div>
+
+        <div class="empty-state" th:if="${requests == null or requests.isEmpty()}">
+            <div class="empty-icon">📭</div>
+            <h3>No requests sent yet</h3>
+            <p><a th:href="@{/books}" style="color:#a78bfa">Browse books</a> and send a request!</p>
+        </div>
+
+        <div class="table-card" th:unless="${requests == null or requests.isEmpty()}">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Book</th>
+                        <th>Owner</th>
+                        <th>Your Message</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Chat</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="req : ${requests}">
+                        <td>
+                            <a th:href="@{/books/{id}(id=${req.book.id})}"
+                                style="color:#c4b5fd;text-decoration:none;font-weight:600;"
+                                th:text="${req.book.title}">Title</a>
+                            <div style="font-size:0.78rem;color:#64748b;margin-top:2px"
+                                th:text="'₹' + ${req.book.price}">₹0</div>
+                        </td>
+                        <td th:text="${req.book.owner.username}">Owner</td>
+                        <td style="max-width:200px;color:#94a3b8;font-size:0.85rem" th:text="${req.message}">Message
+                        </td>
+                        <td>
+                            <span class="badge" th:classappend="${req.status.name() == 'PENDING'} ? 'badge-pending' :
+                                          (${req.status.name() == 'APPROVED'} ? 'badge-approved' : 'badge-rejected')"
+                                th:text="${req.status.name()}">Status</span>
+                        </td>
+                        <td style="font-size:0.82rem;color:#64748b"
+                            th:text="${#temporals.format(req.createdAt, 'dd MMM yyyy')}">Date</td>
+                        <td>
+                            <a th:if="${req.status.name() == 'APPROVED'}"
+                               th:href="@{/chat/{id}(id=${req.id})}"
+                               class="action-btn-chat">💬 Chat</a>
+                            <span th:unless="${req.status.name() == 'APPROVED'}"
+                                  style="color:#475569;font-size:0.8rem;">—</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+
+</html>

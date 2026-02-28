@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Wishlist – BookSwap Hub</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+    <link rel="stylesheet" th:href="@{/css/books.css}" />
+    <script th:src="@{/js/theme.js}"></script>
+</head>
+
+<body>
+    <!-- Nav -->
+    <nav class="top-nav">
+        <div class="nav-container">
+            <a class="nav-brand" th:href="@{/books}">📚 BookSwap Hub</a>
+            <button class="hamburger-btn" aria-label="Menu"><span></span><span></span><span></span></button>
+            <div class="nav-overlay"></div>
+            <div class="nav-links">
+                <a class="nav-link" th:href="@{/books}">Browse</a>
+                <th:block th:if="${isLoggedIn}">
+                    <a class="nav-link" th:href="@{/books/new}">+ List Book</a>
+                    <a class="nav-link" th:href="@{/books/my-listings}">My Listings</a>
+                    <a class="nav-link" th:href="@{/my-requests}">My Requests</a>
+                    <a class="nav-link" th:href="@{/owner/requests}">Inbox</a>
+                    <a class="nav-link active" th:href="@{/wishlist}">🔖 Wishlist</a>
+                    <a class="nav-link notif-bell" th:href="@{/notifications}">
+                        🔔<span class="notif-badge"
+                              th:if="${unreadNotificationCount != null and unreadNotificationCount > 0}"
+                              th:text="${unreadNotificationCount}"></span>
+                    </a>
+                    <form th:action="@{/logout}" method="post" style="margin:0">
+                        <button type="submit" class="nav-link" style="background:none;cursor:pointer;border:none;">Sign Out</button>
+                    </form>
+                </th:block>
+                <th:block th:unless="${isLoggedIn}">
+                    <a class="nav-link" th:href="@{/login}">🔑 Login</a>
+                    <a class="nav-link accent" th:href="@{/register}">✨ Register</a>
+                </th:block>
+                <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle theme">☀️</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="page-wrapper">
+
+        <div class="page-header">
+            <h1>🔖 My Wishlist</h1>
+            <p>Books you've saved to review later.</p>
+        </div>
+
+        <!-- Flash messages -->
+        <div class="flash-success" th:if="${successMessage}">✅ <span th:text="${successMessage}"></span></div>
+        <div class="flash-error"   th:if="${errorMessage}">❌ <span th:text="${errorMessage}"></span></div>
+
+        <!-- Empty state -->
+        <div class="empty-state" th:if="${wishlistItems == null or wishlistItems.isEmpty()}">
+            <div class="empty-icon">🔖</div>
+            <h3>Your wishlist is empty</h3>
+            <p>Browse books and click <strong>Save to Wishlist</strong> on any book you like.</p>
+            <a th:href="@{/books}" class="btn btn-primary" style="margin-top:1rem; max-width:200px;">Browse Books →</a>
+        </div>
+
+        <!-- Wishlist cards -->
+        <div class="books-grid" th:unless="${wishlistItems == null or wishlistItems.isEmpty()}">
+            <div th:each="item : ${wishlistItems}" class="book-card-wrapper" style="position:relative;">
+
+                <!-- Book card link -->
+                <a th:href="@{/books/{id}(id=${item.book.id})}" class="book-card">
+                    <div class="book-card-image">
+                        <img th:if="${item.book.imagePath != null}"
+                             th:src="@{/uploads/{img}(img=${item.book.imagePath})}"
+                             th:alt="${item.book.title}" />
+                        <span th:unless="${item.book.imagePath != null}">📚</span>
+                    </div>
+                    <div class="book-card-body">
+                        <div class="book-card-title" th:text="${item.book.title}">Title</div>
+                        <div class="book-card-author">by <span th:text="${item.book.author}">Author</span></div>
+                        <div class="book-card-meta">
+                            <span class="book-price" th:text="'₹' + ${item.book.price}">₹0</span>
+                            <span class="badge badge-category" th:text="${item.book.category.displayName}">Category</span>
+                            <span class="badge"
+                                  th:classappend="${item.book.condition.name() == 'NEW'} ? 'badge-new' :
+                                                 (${item.book.condition.name() == 'LIKE_NEW'} ? 'badge-like-new' : 'badge-old')"
+                                  th:text="${item.book.condition.displayName}">Condition</span>
+                        </div>
+                        <div style="font-size:0.75rem; color:#64748b; margin-top:0.5rem;">
+                            Saved <span th:text="${#temporals.format(item.savedAt, 'dd MMM yyyy')}"></span>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- Quick remove button -->
+                <form th:action="@{/books/{id}/wishlist(id=${item.book.id})}" method="post"
+                      style="position:absolute; top:0.6rem; right:0.6rem; margin:0;">
+                    <button type="submit" class="wishlist-remove-btn" title="Remove from wishlist">🗑</button>
+                </form>
+
+            </div>
+        </div>
+
+    </div>
+</body>
+
+</html>

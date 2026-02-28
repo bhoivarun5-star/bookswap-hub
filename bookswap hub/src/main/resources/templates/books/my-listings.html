@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Listings – BookSwap Hub</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+    <link rel="stylesheet" th:href="@{/css/books.css}" />
+    <script th:src="@{/js/theme.js}"></script>
+</head>
+
+<body>
+    <!-- Nav -->
+    <nav class="top-nav">
+        <div class="nav-container">
+            <a class="nav-brand" th:href="@{/books}">📚 BookSwap Hub</a>
+            <button class="hamburger-btn" aria-label="Menu"><span></span><span></span><span></span></button>
+            <div class="nav-overlay"></div>
+            <div class="nav-links">
+                <a class="nav-link" th:href="@{/books}">Browse</a>
+                <th:block th:if="${isLoggedIn}">
+                    <a class="nav-link" th:href="@{/books/new}">+ List Book</a>
+                    <a class="nav-link active" th:href="@{/books/my-listings}">My Listings</a>
+                    <a class="nav-link" th:href="@{/my-requests}">My Requests</a>
+                    <a class="nav-link" th:href="@{/owner/requests}">Inbox</a>
+                    <a class="nav-link" th:href="@{/wishlist}">🔖 Wishlist</a>
+                    <a class="nav-link notif-bell" th:href="@{/notifications}">
+                        🔔<span class="notif-badge"
+                              th:if="${unreadNotificationCount != null and unreadNotificationCount > 0}"
+                              th:text="${unreadNotificationCount}"></span>
+                    </a>
+                    <form th:action="@{/logout}" method="post" style="margin:0">
+                        <button type="submit" class="nav-link" style="background:none;cursor:pointer;border:none;">Sign
+                            Out</button>
+                    </form>
+                </th:block>
+                <th:block th:unless="${isLoggedIn}">
+                    <a class="nav-link" th:href="@{/login}">🔑 Login</a>
+                    <a class="nav-link accent" th:href="@{/register}">✨ Register</a>
+                </th:block>
+                <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle theme">☀️</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="page-wrapper">
+
+        <div class="page-header">
+            <h1>📋 My Listings</h1>
+            <p>Manage your book listings — edit, delete, or mark them as sold.</p>
+        </div>
+
+        <div class="flash-success" th:if="${successMessage}">✅ <span th:text="${successMessage}"></span></div>
+        <div class="flash-error" th:if="${errorMessage}">❌ <span th:text="${errorMessage}"></span></div>
+
+        <!-- Empty state -->
+        <div class="empty-state" th:if="${books == null or books.isEmpty()}">
+            <div class="empty-icon">📭</div>
+            <h3>No listings yet</h3>
+            <p>Start by <a th:href="@{/books/new}" style="color:#a78bfa">listing your first book</a>!</p>
+        </div>
+
+        <!-- Table -->
+        <div class="table-card" th:unless="${books == null or books.isEmpty()}">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Image</th>
+                        <th>Book</th>
+                        <th>Price</th>
+                        <th>Category</th>
+                        <th>Condition</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="book : ${books}">
+                        <td>
+                            <div class="table-thumb">
+                                <img th:if="${book.imagePath != null}" th:src="@{/uploads/{img}(img=${book.imagePath})}"
+                                    th:alt="${book.title}" />
+                                <span th:unless="${book.imagePath != null}">📚</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div style="font-weight:600;color:#f1f5f9" th:text="${book.title}">Title</div>
+                            <div style="font-size:0.8rem;color:#64748b" th:text="'by ' + ${book.author}">Author</div>
+                        </td>
+                        <td style="font-weight:700;color:#c4b5fd" th:text="'₹' + ${book.price}">₹0</td>
+                        <td><span class="badge badge-category" th:text="${book.category.displayName}">Cat</span></td>
+                        <td>
+                            <span class="badge" th:classappend="${book.condition.name() == 'NEW'} ? 'badge-new' :
+                                          (${book.condition.name() == 'LIKE_NEW'} ? 'badge-like-new' : 'badge-old')"
+                                th:text="${book.condition.displayName}">Cond</span>
+                        </td>
+                        <td>
+                            <span th:if="${book.sold}" class="badge badge-sold">Sold</span>
+                            <span th:unless="${book.sold}" class="badge badge-approved">Active</span>
+                        </td>
+                        <td>
+                            <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+                                <a th:href="@{/books/{id}(id=${book.id})}" class="action-btn action-btn-edit">👁
+                                    View</a>
+                                <a th:href="@{/books/{id}/edit(id=${book.id})}" class="action-btn action-btn-edit">✏️
+                                    Edit</a>
+
+                                <form th:action="@{/books/{id}/delete(id=${book.id})}" method="post" style="margin:0"
+                                    onsubmit="return confirm('Delete this listing?')">
+                                    <button class="action-btn action-btn-delete" type="submit">🗑</button>
+                                </form>
+
+                                <form th:unless="${book.sold}" th:action="@{/books/{id}/sold(id=${book.id})}"
+                                    method="post" style="margin:0">
+                                    <button class="action-btn action-btn-sold" type="submit">✅ Sold</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+
+</html>

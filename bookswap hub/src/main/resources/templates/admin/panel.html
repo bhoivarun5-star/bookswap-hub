@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Panel – BookSwap Hub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0816;
+            color: #f1f5f9;
+            min-height: 100vh;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 70% 50% at 0% 0%, rgba(220, 38, 38, 0.12) 0%, transparent 55%),
+                radial-gradient(ellipse 60% 50% at 100% 100%, rgba(124, 58, 237, 0.1) 0%, transparent 55%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ─── Sidebar ───────────────────────────────────────── */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 240px;
+            background: rgba(255, 255, 255, 0.04);
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(16px);
+            display: flex;
+            flex-direction: column;
+            padding: 1.75rem 1.25rem;
+            z-index: 10;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 2rem;
+        }
+
+        .brand-icon {
+            font-size: 1.5rem;
+            background: rgba(239, 68, 68, 0.2);
+            border-radius: 10px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .brand-text {
+            font-size: 0.95rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fca5a5, #ef4444);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            padding: 0.65rem 0.85rem;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #94a3b8;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            margin-bottom: 0.2rem;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: rgba(239, 68, 68, 0.12);
+            color: #fca5a5;
+        }
+
+        .nav-section {
+            font-size: 0.67rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #475569;
+            margin: 1.25rem 0 0.6rem 0.3rem;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+        }
+
+        .logout-btn {
+            width: 100%;
+            text-align: left;
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            color: #fca5a5;
+            border-radius: 10px;
+            padding: 0.65rem 0.85rem;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+        }
+
+        .logout-btn:hover {
+            background: rgba(239, 68, 68, 0.18);
+        }
+
+        /* ─── Main ──────────────────────────────────────────── */
+        .main {
+            margin-left: 240px;
+            padding: 2rem 2.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .page-header {
+            margin-bottom: 2rem;
+        }
+
+        .page-header h1 {
+            font-size: 1.75rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fca5a5, #ef4444);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .page-header p {
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+
+        /* ─── Stats ─────────────────────────────────────────── */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 2.5rem;
+        }
+
+        /* ─── Charts ─────────────────────────────────────────── */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+        .chart-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 1.4rem 1.6rem;
+        }
+        .chart-card.wide {
+            grid-column: span 2;
+        }
+        .chart-title {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            margin-bottom: 1rem;
+        }
+        @media (max-width: 900px) {
+            .charts-grid { grid-template-columns: 1fr; }
+            .chart-card.wide { grid-column: span 1; }
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            border-radius: 16px;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1.1rem;
+            transition: transform 0.25s, box-shadow 0.25s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .stat-icon.red {
+            background: rgba(239, 68, 68, 0.15);
+        }
+
+        .stat-icon.indigo {
+            background: rgba(99, 102, 241, 0.15);
+        }
+
+        .stat-icon.green {
+            background: rgba(16, 185, 129, 0.15);
+        }
+
+        .stat-value {
+            font-size: 2.1rem;
+            font-weight: 900;
+            color: #f1f5f9;
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.78rem;
+            color: #64748b;
+            margin-top: 0.3rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        /* ─── Sections ──────────────────────────────────────── */
+        .section-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #e2e8f0;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .table-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 2.5rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead th {
+            background: rgba(239, 68, 68, 0.1);
+            color: #94a3b8;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            padding: 0.9rem 1.25rem;
+            text-align: left;
+        }
+
+        tbody td {
+            padding: 0.9rem 1.25rem;
+            color: #cbd5e1;
+            font-size: 0.85rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            vertical-align: middle;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        tbody tr:hover td {
+            background: rgba(255, 255, 255, 0.025);
+        }
+
+        .thumb {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: rgba(124, 58, 237, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            flex-shrink: 0;
+        }
+
+        .thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        /* ─── Badges ────────────────────────────────────────── */
+        .badge {
+            display: inline-block;
+            padding: 0.18rem 0.6rem;
+            border-radius: 999px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .badge-active {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #6ee7b7;
+        }
+
+        .badge-sold {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+        }
+
+        .badge-user {
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.4);
+            color: #a5b4fc;
+        }
+
+        /* ─── Action buttons ────────────────────────────────── */
+        .actions {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-sm {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.3rem 0.7rem;
+            border-radius: 7px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .btn-edit {
+            background: rgba(59, 130, 246, 0.15);
+            color: #93c5fd;
+            border: 1px solid rgba(59, 130, 246, 0.35);
+        }
+
+        .btn-edit:hover {
+            background: rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-delete {
+            background: rgba(239, 68, 68, 0.15);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.35);
+        }
+
+        .btn-delete:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        /* ─── Flash messages ────────────────────────────────── */
+        .flash-success {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #6ee7b7;
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            font-size: 0.85rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .flash-error {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            font-size: 0.85rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* ─── Responsive ────────────────────────────────────── */
+        @media (max-width: 900px) {
+            .sidebar {
+                display: none;
+            }
+
+            .main {
+                margin-left: 0;
+                padding: 1.25rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 550px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ─── Page sections ──────────────────────────────────── */
+        .page-section { display: none; }
+        .page-section.active { display: block; }
+
+        /* ─── Report toolbar ────────────────────────────────── */
+        .report-toolbar {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-generate {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.55rem;
+            padding: 0.65rem 1.5rem;
+            border-radius: 10px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ef4444, #7c3aed);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            transition: opacity 0.2s, transform 0.15s;
+            white-space: nowrap;
+            flex-shrink: 0;
+            align-self: center;
+        }
+        .btn-generate:hover  { opacity: 0.85; transform: translateY(-2px); }
+        .btn-generate:active { transform: scale(0.97); }
+        .btn-generate:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    </style>
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-icon">🛡️</div>
+            <div class="brand-text">Admin Panel</div>
+        </div>
+
+        <span class="nav-section">Navigation</span>
+        <a href="#" class="nav-item active" data-target="dashboard">📊 Dashboard</a>
+        <a href="#" class="nav-item" data-target="reports">📋 Reports</a>
+        <a href="/books" class="nav-item">📚 Browse Books</a>
+
+        <div class="sidebar-footer">
+            <form th:action="@{/logout}" method="post">
+                <button type="submit" class="logout-btn">🚪 Sign Out</button>
+            </form>
+        </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="main">
+
+        <!-- ─── Dashboard Section ──────────────────────────── -->
+        <div id="section-dashboard" class="page-section active">
+
+        <div class="page-header">
+            <h1>🛡️ Admin Dashboard</h1>
+            <p>Manage users and book listings across BookSwap Hub.</p>
+        </div>
+
+        <div class="flash-success" th:if="${successMessage}" th:text="'✅ ' + ${successMessage}"></div>
+        <div class="flash-error" th:if="${errorMessage}" th:text="'❌ ' + ${errorMessage}"></div>
+
+        <!-- ─── Stats ───────────────────────────────────── -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon red">👥</div>
+                <div>
+                    <div class="stat-value" th:text="${totalUsers}">0</div>
+                    <div class="stat-label">Total Users</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon indigo">📚</div>
+                <div>
+                    <div class="stat-value" th:text="${totalBooks}">0</div>
+                    <div class="stat-label">Total Books</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">✅</div>
+                <div>
+                    <div class="stat-value" th:text="${activeBooks}">0</div>
+                    <div class="stat-label">Active Listings</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon red">💸</div>
+                <div>
+                    <div class="stat-value" th:text="${soldBooks}">0</div>
+                    <div class="stat-label">Books Sold</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon indigo">📨</div>
+                <div>
+                    <div class="stat-value" th:text="${totalRequests}">0</div>
+                    <div class="stat-label">Total Requests</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Users Table ─────────────────────────────── -->
+        <div class="section-title">👥 All Users</div>
+        <div class="table-card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="user : ${users}">
+                        <td th:text="${user.id}" style="color:#475569;font-size:0.78rem;"></td>
+                        <td style="font-weight:600;color:#f1f5f9;" th:text="${user.username}"></td>
+                        <td th:text="${user.email}"></td>
+                        <td><span class="badge badge-user">User</span></td>
+                        <td>
+                            <div class="actions">
+                                <form th:action="@{/admin/users/{id}/delete(id=${user.id})}" method="post"
+                                    onsubmit="return confirm('Delete user ' + /*[[${user.username}]]*/ '' + ' and all their books?')">
+                                    <button type="submit" class="btn-sm btn-delete">🗑 Delete</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr th:if="${users == null or users.isEmpty()}">
+                        <td colspan="5" style="text-align:center;color:#475569;padding:2rem;">No users found.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ─── Books Table ─────────────────────────────── -->
+        <div class="section-title">📚 All Books</div>
+        <div class="table-card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Image</th>
+                        <th>Title / Author</th>
+                        <th>Owner</th>
+                        <th>Price</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="book : ${books}">
+                        <td>
+                            <div class="thumb">
+                                <img th:if="${book.imagePath != null}" th:src="@{/uploads/{img}(img=${book.imagePath})}"
+                                    th:alt="${book.title}" />
+                                <span th:unless="${book.imagePath != null}">📚</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div style="font-weight:600;color:#f1f5f9;" th:text="${book.title}"></div>
+                            <div style="font-size:0.77rem;color:#64748b;" th:text="'by ' + ${book.author}"></div>
+                        </td>
+                        <td th:text="${book.owner.username}" style="color:#a5b4fc;font-weight:600;"></td>
+                        <td style="font-weight:700;color:#c4b5fd;" th:text="'₹' + ${book.price}"></td>
+                        <td>
+                            <span class="badge badge-sold" th:if="${book.sold}">Sold</span>
+                            <span class="badge badge-active" th:unless="${book.sold}">Active</span>
+                        </td>
+                        <td>
+                            <div class="actions">
+                                <a th:href="@{/admin/books/{id}/edit(id=${book.id})}" class="btn-sm btn-edit">✏️
+                                    Edit</a>
+                                <form th:action="@{/admin/books/{id}/delete(id=${book.id})}" method="post"
+                                    onsubmit="return confirm('Delete this book?')">
+                                    <button type="submit" class="btn-sm btn-delete">🗑 Delete</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr th:if="${books == null or books.isEmpty()}">
+                        <td colspan="6" style="text-align:center;color:#475569;padding:2rem;">No books found.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        </div><!-- end #section-dashboard -->
+
+        <!-- ─── Reports Section ────────────────────────────── -->
+        <div id="section-reports" class="page-section">
+
+            <div class="report-toolbar">
+                <div class="page-header" style="margin-bottom:0;">
+                    <h1>📋 Reports &amp; Analytics</h1>
+                    <p>View platform trends and export a full PDF report.</p>
+                </div>
+                <button class="btn-generate" id="pdfBtn" onclick="generateReport()">📄 Generate PDF Report</button>
+            </div>
+
+            <div class="charts-grid">
+
+                <div class="chart-card wide">
+                    <div class="chart-title">📅 Activity – Last 14 Days</div>
+                    <canvas id="activityChart" height="90"></canvas>
+                </div>
+
+                <div class="chart-card">
+                    <div class="chart-title">📚 Book Status</div>
+                    <canvas id="statusChart" height="220"></canvas>
+                </div>
+
+                <div class="chart-card">
+                    <div class="chart-title">📨 Request Status</div>
+                    <canvas id="requestChart" height="220"></canvas>
+                </div>
+
+                <div class="chart-card wide">
+                    <div class="chart-title">🏷️ Books by Category</div>
+                    <canvas id="categoryChart" height="90"></canvas>
+                </div>
+
+            </div>
+
+        </div><!-- end #section-reports -->
+
+    </main>
+
+    <!-- ─── Scripts ─────────────────────────────────────────────────────── -->
+    <script th:inline="javascript">
+    /*<![CDATA[*/
+        const DAYS        = /*[[${chartDays}]]*/      [];
+        const REG_DATA    = /*[[${chartRegData}]]*/   [];
+        const BOOKS_DATA  = /*[[${chartBooksData}]]*/ [];
+        const CAT_LABELS  = /*[[${chartCatLabels}]]*/ [];
+        const CAT_DATA    = /*[[${chartCatData}]]*/   [];
+        const ACTIVE      = /*[[${activeBooks}]]*/    0;
+        const SOLD        = /*[[${soldBooks}]]*/      0;
+        const PENDING     = /*[[${pendingReqs}]]*/    0;
+        const APPROVED    = /*[[${approvedReqs}]]*/   0;
+        const REJECTED    = /*[[${rejectedReqs}]]*/   0;
+        const TOTAL_USERS = /*[[${totalUsers}]]*/     0;
+        const TOTAL_BOOKS = /*[[${totalBooks}]]*/     0;
+        const TOTAL_REQ   = /*[[${totalRequests}]]*/ 0;
+    /*]]>*/
+
+        // ─── Sidebar nav switching ────────────────────────────────────────
+        document.querySelectorAll('.nav-item[data-target]').forEach(function(item) {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                showSection(this.dataset.target);
+            });
+        });
+
+        function showSection(name) {
+            document.querySelectorAll('.page-section').forEach(function(s) {
+                s.classList.remove('active');
+            });
+            document.getElementById('section-' + name).classList.add('active');
+            document.querySelectorAll('.nav-item[data-target]').forEach(function(n) {
+                n.classList.toggle('active', n.dataset.target === name);
+            });
+            if (name === 'reports' && !window._chartsReady) {
+                initCharts();
+                window._chartsReady = true;
+            }
+        }
+
+        // ─── Chart initialisation (lazy – only when Reports first opened) ─
+        function initCharts() {
+            Chart.defaults.color = '#94a3b8';
+            Chart.defaults.borderColor = 'rgba(255,255,255,0.07)';
+
+            // 1. Activity line
+            new Chart(document.getElementById('activityChart'), {
+                type: 'line',
+                data: {
+                    labels: DAYS,
+                    datasets: [
+                        {
+                            label: 'New Users',
+                            data: REG_DATA,
+                            borderColor: '#f87171',
+                            backgroundColor: 'rgba(248,113,113,0.12)',
+                            tension: 0.4, fill: true,
+                            pointRadius: 4, pointHoverRadius: 6, borderWidth: 2
+                        },
+                        {
+                            label: 'Books Listed',
+                            data: BOOKS_DATA,
+                            borderColor: '#818cf8',
+                            backgroundColor: 'rgba(129,140,248,0.12)',
+                            tension: 0.4, fill: true,
+                            pointRadius: 4, pointHoverRadius: 6, borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: { legend: { position: 'top' } },
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                }
+            });
+
+            // 2. Book status doughnut
+            new Chart(document.getElementById('statusChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Active', 'Sold'],
+                    datasets: [{
+                        data: [ACTIVE, SOLD],
+                        backgroundColor: ['rgba(16,185,129,0.75)', 'rgba(239,68,68,0.75)'],
+                        borderColor:     ['rgba(16,185,129,1)',    'rgba(239,68,68,1)'],
+                        borderWidth: 2, hoverOffset: 8
+                    }]
+                },
+                options: { responsive: true, cutout: '65%', plugins: { legend: { position: 'bottom' } } }
+            });
+
+            // 3. Request status doughnut
+            new Chart(document.getElementById('requestChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Pending', 'Approved', 'Rejected'],
+                    datasets: [{
+                        data: [PENDING, APPROVED, REJECTED],
+                        backgroundColor: ['rgba(251,191,36,0.75)', 'rgba(16,185,129,0.75)', 'rgba(239,68,68,0.75)'],
+                        borderColor:     ['rgba(251,191,36,1)',    'rgba(16,185,129,1)',    'rgba(239,68,68,1)'],
+                        borderWidth: 2, hoverOffset: 8
+                    }]
+                },
+                options: { responsive: true, cutout: '65%', plugins: { legend: { position: 'bottom' } } }
+            });
+
+            // 4. Books by category bar
+            new Chart(document.getElementById('categoryChart'), {
+                type: 'bar',
+                data: {
+                    labels: CAT_LABELS,
+                    datasets: [{
+                        label: 'Books',
+                        data: CAT_DATA,
+                        backgroundColor: [
+                            'rgba(129,140,248,0.7)', 'rgba(167,139,250,0.7)', 'rgba(248,113,113,0.7)',
+                            'rgba(251,191,36,0.7)',  'rgba(52,211,153,0.7)',  'rgba(56,189,248,0.7)',
+                            'rgba(249,115,22,0.7)',  'rgba(236,72,153,0.7)',  'rgba(99,102,241,0.7)'
+                        ],
+                        borderRadius: 6,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                }
+            });
+        }
+
+        // ─── PDF Report Generator ─────────────────────────────────────────
+        function generateReport() {
+            if (!window._chartsReady) {
+                alert('Charts are not ready yet. Please wait a moment and try again.');
+                return;
+            }
+            var btn = document.getElementById('pdfBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Generating…';
+
+            setTimeout(function() {
+                try {
+                    var jsPDFLib = window.jspdf.jsPDF;
+                    var doc = new jsPDFLib({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+                    var PW = 210, PH = 297;
+
+                    function darkPage() {
+                        doc.setFillColor(10, 8, 22);
+                        doc.rect(0, 0, PW, PH, 'F');
+                    }
+
+                    // ── Page 1: Cover + Stats ──────────────────────────────
+                    darkPage();
+
+                    // Title banner
+                    doc.setFillColor(180, 30, 30);
+                    doc.roundedRect(15, 14, PW - 30, 36, 4, 4, 'F');
+                    doc.setFontSize(22);
+                    doc.setFont('helvetica', 'bold');
+                    doc.setTextColor(255, 255, 255);
+                    doc.text('BookSwap Hub', PW / 2, 29, { align: 'center' });
+                    doc.setFontSize(11);
+                    doc.setFont('helvetica', 'normal');
+                    doc.setTextColor(255, 200, 200);
+                    doc.text('Analytics Report', PW / 2, 40, { align: 'center' });
+
+                    var now = new Date();
+                    var dateStr = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
+                    doc.setFontSize(9);
+                    doc.setTextColor(100, 116, 139);
+                    doc.text('Generated: ' + dateStr, PW - 15, 57, { align: 'right' });
+
+                    // Summary stats
+                    doc.setFontSize(11);
+                    doc.setFont('helvetica', 'bold');
+                    doc.setTextColor(252, 165, 165);
+                    doc.text('SUMMARY STATISTICS', 15, 66);
+                    doc.setDrawColor(180, 30, 30);
+                    doc.setLineWidth(0.4);
+                    doc.line(15, 68, PW - 15, 68);
+
+                    var stats = [
+                        ['Total Users',        TOTAL_USERS],
+                        ['Total Books Listed', TOTAL_BOOKS],
+                        ['Active Listings',    ACTIVE],
+                        ['Books Sold',         SOLD],
+                        ['Total Requests',     TOTAL_REQ],
+                        ['Pending Requests',   PENDING],
+                        ['Approved Requests',  APPROVED],
+                        ['Rejected Requests',  REJECTED]
+                    ];
+                    var sy = 74;
+                    stats.forEach(function(row, i) {
+                        if (i % 2 === 0) doc.setFillColor(20, 18, 45);
+                        else             doc.setFillColor(14, 12, 32);
+                        doc.roundedRect(15, sy, PW - 30, 11, 2, 2, 'F');
+                        doc.setFontSize(9);
+                        doc.setFont('helvetica', 'normal');
+                        doc.setTextColor(148, 163, 184);
+                        doc.text(row[0], 22, sy + 7.5);
+                        doc.setFont('helvetica', 'bold');
+                        doc.setTextColor(241, 245, 249);
+                        doc.text(String(row[1]), PW - 22, sy + 7.5, { align: 'right' });
+                        sy += 12;
+                    });
+
+                    // Category breakdown table
+                    sy += 6;
+                    doc.setFontSize(11);
+                    doc.setFont('helvetica', 'bold');
+                    doc.setTextColor(252, 165, 165);
+                    doc.text('BOOKS BY CATEGORY', 15, sy);
+                    sy += 2;
+                    doc.setDrawColor(180, 30, 30);
+                    doc.line(15, sy, PW - 15, sy);
+                    sy += 5;
+                    CAT_LABELS.forEach(function(cat, i) {
+                        if (sy > PH - 20) { doc.addPage(); darkPage(); sy = 20; }
+                        if (i % 2 === 0) doc.setFillColor(20, 18, 45);
+                        else             doc.setFillColor(14, 12, 32);
+                        doc.roundedRect(15, sy, PW - 30, 10, 2, 2, 'F');
+                        doc.setFontSize(8.5);
+                        doc.setFont('helvetica', 'normal');
+                        doc.setTextColor(148, 163, 184);
+                        doc.text(cat, 22, sy + 7);
+                        doc.setFont('helvetica', 'bold');
+                        doc.setTextColor(241, 245, 249);
+                        doc.text(String(CAT_DATA[i] || 0), PW - 22, sy + 7, { align: 'right' });
+                        sy += 11;
+                    });
+
+                    // ── Pages 2–5: One chart per page ────────────────────
+                    var charts = [
+                        { id: 'activityChart',  title: 'Activity – Last 14 Days' },
+                        { id: 'statusChart',    title: 'Book Status (Active vs Sold)' },
+                        { id: 'requestChart',   title: 'Request Status Distribution' },
+                        { id: 'categoryChart',  title: 'Books by Category' }
+                    ];
+                    charts.forEach(function(c) {
+                        doc.addPage();
+                        darkPage();
+                        doc.setFillColor(180, 30, 30);
+                        doc.roundedRect(15, 14, PW - 30, 18, 3, 3, 'F');
+                        doc.setFontSize(13);
+                        doc.setFont('helvetica', 'bold');
+                        doc.setTextColor(255, 255, 255);
+                        doc.text(c.title, PW / 2, 25, { align: 'center' });
+                        var cvs = document.getElementById(c.id);
+                        if (!cvs) return;
+                        var imgData = cvs.toDataURL('image/png');
+                        var aspect  = cvs.width / cvs.height;
+                        var iW = PW - 30;
+                        var iH = iW / aspect;
+                        var maxH = PH - 52;
+                        if (iH > maxH) { iH = maxH; iW = iH * aspect; }
+                        doc.addImage(imgData, 'PNG', (PW - iW) / 2, 38, iW, iH);
+                    });
+
+                    // ── Footer on every page ────────────────────────────
+                    var total = doc.getNumberOfPages();
+                    for (var p = 1; p <= total; p++) {
+                        doc.setPage(p);
+                        doc.setDrawColor(30, 28, 50);
+                        doc.setLineWidth(0.3);
+                        doc.line(15, PH - 12, PW - 15, PH - 12);
+                        doc.setFontSize(7.5);
+                        doc.setFont('helvetica', 'normal');
+                        doc.setTextColor(71, 85, 105);
+                        doc.text('BookSwap Hub  •  Confidential', 15, PH - 7);
+                        doc.text('Page ' + p + ' / ' + total, PW - 15, PH - 7, { align: 'right' });
+                    }
+
+                    doc.save('bookswap-report-' + now.toISOString().slice(0, 10) + '.pdf');
+                } catch(err) {
+                    console.error(err);
+                    alert('PDF generation failed: ' + err.message);
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = '📄 Generate PDF Report';
+                }
+            }, 150);
+        }
+    </script>
+
+</body>
+
+</html>

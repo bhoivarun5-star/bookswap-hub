@@ -1,0 +1,30 @@
+# Build output
+target/
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+
+# Git
+.git/
+.gitignore
+
+# Uploads (user-generated)
+uploads/
+
+# Wrapper JAR (downloaded during build)
+.mvn/wrapper/maven-wrapper.jar
+
+# Inner duplicate project
+bookswap hub/
+
+# Docs & config not needed at build time
+HELP.md
+render.yaml
+README.md
+*.md
+
+# OS junk
+Thumbs.db
+.DS_Store
