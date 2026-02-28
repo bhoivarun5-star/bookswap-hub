@@ -29,7 +29,6 @@ public class Book {
     @Column(name = "image_path")
     private String imagePath;
 
-    @Lob
     @Column(name = "image_data", columnDefinition = "BYTEA")
     private byte[] imageData;
 
