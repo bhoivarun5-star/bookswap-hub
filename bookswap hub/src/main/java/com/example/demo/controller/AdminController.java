@@ -203,7 +203,7 @@ public class AdminController {
         return "redirect:/admin/panel";
     }
 
-    // ─── Helper: save image ───────────────────────────────────────────────────
+    // ─── Helper: save image ───────────────────────────────────────────────────────
     private String saveImage(MultipartFile file) throws Exception {
         java.nio.file.Path uploadPath = java.nio.file.Paths.get("uploads/");
         if (!java.nio.file.Files.exists(uploadPath)) {

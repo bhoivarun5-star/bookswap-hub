@@ -111,6 +111,7 @@ public class BookController {
         return "books/detail";
     }
 
+
     // ─── Upload form ──────────────────────────────────────────────────────────
     @GetMapping("/books/new")
     public String uploadForm(Authentication authentication, Model model) {

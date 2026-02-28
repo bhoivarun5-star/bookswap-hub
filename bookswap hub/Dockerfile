@@ -1,9 +1,6 @@
-# ── Stage 1: Build ────────────────────────────────────────────────────────────
-FROM maven:3.9.9-eclipse-temurin-17-alpine AS build
+# ── Stage 1: Build (vulnerabilities here don't affect final image) ───────────
+FROM maven:3.9.6-eclipse-temurin-17-jammy AS build
 WORKDIR /app
-
-# Patch all Alpine packages to eliminate known CVEs
-RUN apk update && apk upgrade --no-cache && rm -rf /var/cache/apk/*
 
 # Cache dependencies first
 COPY pom.xml .
@@ -14,17 +11,21 @@ COPY src ./src
 RUN mvn clean package -DskipTests -B --no-transfer-progress \
     && rm -rf ~/.m2
 
-# ── Stage 2: Runtime (Alpine ~130MB vs Ubuntu ~270MB) ────────────────────────
-FROM eclipse-temurin:17.0.13_11-jre-alpine
+# ── Stage 2: Runtime ─────────────────────────────────────────────────────────
+FROM eclipse-temurin:17-jre-noble
 WORKDIR /app
 
-# Patch all Alpine packages to eliminate known CVEs
-RUN apk update && apk upgrade --no-cache && rm -rf /var/cache/apk/*
+# Patch all OS packages to eliminate known CVEs
+RUN apt-get update && apt-get upgrade -y && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Create uploads directory
-RUN mkdir -p /app/uploads
+# Create uploads directory and non-root user
+RUN mkdir -p /app/uploads \
+    && groupadd -r appuser && useradd -r -g appuser appuser \
+    && chown -R appuser:appuser /app
 
-COPY --from=build /app/target/*.jar app.jar
+COPY --from=build --chown=appuser:appuser /app/target/*.jar app.jar
+
+USER appuser
 
 EXPOSE 8080
 
