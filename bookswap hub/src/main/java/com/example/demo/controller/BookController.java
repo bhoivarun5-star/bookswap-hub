@@ -5,6 +5,10 @@ import com.example.demo.repository.UserRepository;
 import com.example.demo.service.BookService;
 import com.example.demo.service.PurchaseRequestService;
 import com.example.demo.service.WishlistService;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.stereotype.Controller;
@@ -39,6 +43,22 @@ public class BookController {
     private User getCurrentUser(Authentication auth) {
         return userRepository.findByUsername(auth.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    // ─── Serve book image from database ────────────────────────────────────
+    @GetMapping("/books/image/{id}")
+    @ResponseBody
+    public ResponseEntity<byte[]> getBookImage(@PathVariable Long id) {
+        Optional<Book> optBook = bookService.getBookById(id);
+        if (optBook.isEmpty() || !optBook.get().hasImage()) {
+            return ResponseEntity.notFound().build();
+        }
+        Book book = optBook.get();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(
+                book.getImageType() != null ? book.getImageType() : "image/jpeg"));
+        headers.setCacheControl("max-age=86400");
+        return new ResponseEntity<>(book.getImageData(), headers, HttpStatus.OK);
     }
 
     // ─── Public book listing ──────────────────────────────────────────────────

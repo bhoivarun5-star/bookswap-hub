@@ -9,18 +9,13 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.nio.file.*;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 public class BookService {
 
     private final BookRepository bookRepository;
-
-    // Uploads directory relative to the working directory
-    private static final String UPLOAD_DIR = "uploads/";
 
     public BookService(BookRepository bookRepository) {
         this.bookRepository = bookRepository;
@@ -100,7 +95,8 @@ public class BookService {
         book.setOwner(owner);
 
         if (imageFile != null && !imageFile.isEmpty()) {
-            book.setImagePath(saveImage(imageFile));
+            book.setImageData(imageFile.getBytes());
+            book.setImageType(imageFile.getContentType());
         }
 
         return bookRepository.save(book);
@@ -130,7 +126,8 @@ public class BookService {
         book.setAddress(address);
 
         if (imageFile != null && !imageFile.isEmpty()) {
-            book.setImagePath(saveImage(imageFile));
+            book.setImageData(imageFile.getBytes());
+            book.setImageType(imageFile.getContentType());
         }
 
         return bookRepository.save(book);
@@ -157,23 +154,6 @@ public class BookService {
         }
         book.setSold(true);
         bookRepository.save(book);
-    }
-
-    // ─── Save image to uploads/ folder ────────────────────────────────────────
-    private String saveImage(MultipartFile file) throws IOException {
-        Path uploadPath = Paths.get(UPLOAD_DIR);
-        if (!Files.exists(uploadPath)) {
-            Files.createDirectories(uploadPath);
-        }
-        String ext = "";
-        String original = file.getOriginalFilename();
-        if (original != null && original.contains(".")) {
-            ext = original.substring(original.lastIndexOf("."));
-        }
-        String filename = UUID.randomUUID() + ext;
-        Path filePath = uploadPath.resolve(filename);
-        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-        return filename;
     }
 
     // ─── Haversine distance (km) between two lat/lng points ───────────────────

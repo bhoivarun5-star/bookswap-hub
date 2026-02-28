@@ -605,9 +605,9 @@
                     <tr th:each="book : ${books}">
                         <td>
                             <div class="thumb">
-                                <img th:if="${book.imagePath != null}" th:src="@{/uploads/{img}(img=${book.imagePath})}"
+                                <img th:if="${book.hasImage()}" th:src="@{/books/image/{id}(id=${book.id})}"
                                     th:alt="${book.title}" />
-                                <span th:unless="${book.imagePath != null}">📚</span>
+                                <span th:unless="${book.hasImage()}">📚</span>
                             </div>
                         </td>
                         <td>

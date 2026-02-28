@@ -29,6 +29,13 @@ public class Book {
     @Column(name = "image_path")
     private String imagePath;
 
+    @Lob
+    @Column(name = "image_data", columnDefinition = "BYTEA")
+    private byte[] imageData;
+
+    @Column(name = "image_type")
+    private String imageType;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private BookCategory category;
@@ -115,6 +122,26 @@ public class Book {
 
     public void setImagePath(String imagePath) {
         this.imagePath = imagePath;
+    }
+
+    public byte[] getImageData() {
+        return imageData;
+    }
+
+    public void setImageData(byte[] imageData) {
+        this.imageData = imageData;
+    }
+
+    public String getImageType() {
+        return imageType;
+    }
+
+    public void setImageType(String imageType) {
+        this.imageType = imageType;
+    }
+
+    public boolean hasImage() {
+        return imageData != null && imageData.length > 0;
     }
 
     public BookCategory getCategory() {

@@ -167,7 +167,8 @@ public class AdminController {
                     book.setAddress(address);
                 if (image != null && !image.isEmpty()) {
                     try {
-                        book.setImagePath(saveImage(image));
+                        book.setImageData(image.getBytes());
+                        book.setImageType(image.getContentType());
                     } catch (Exception ex) {
                         throw new RuntimeException(ex);
                     }
@@ -186,12 +187,8 @@ public class AdminController {
     public String deleteUser(@PathVariable long id, RedirectAttributes ra) {
         try {
             userRepository.findById(id).ifPresent(user -> {
-                // Delete purchase requests where this user is the requester
-                // (on other owners' books) — cascades to chat messages automatically
                 purchaseRequestRepository.findByRequesterOrderByCreatedAtDesc(user)
                         .forEach(req -> purchaseRequestRepository.delete(Objects.requireNonNull(req)));
-                // Delete all books owned by this user
-                // (cascade in Book → PurchaseRequest → ChatMessage handles the rest)
                 bookRepository.findByOwnerOrderByCreatedAtDesc(user)
                         .forEach(book -> bookRepository.delete(Objects.requireNonNull(book)));
                 userRepository.delete(Objects.requireNonNull(user));
@@ -201,23 +198,5 @@ public class AdminController {
             ra.addFlashAttribute("errorMessage", "Failed to delete user: " + e.getMessage());
         }
         return "redirect:/admin/panel";
-    }
-
-    // ─── Helper: save image ───────────────────────────────────────────────────────
-    private String saveImage(MultipartFile file) throws Exception {
-        java.nio.file.Path uploadPath = java.nio.file.Paths.get("uploads/");
-        if (!java.nio.file.Files.exists(uploadPath)) {
-            java.nio.file.Files.createDirectories(uploadPath);
-        }
-        String ext = "";
-        String original = file.getOriginalFilename();
-        if (original != null && original.contains(".")) {
-            ext = original.substring(original.lastIndexOf("."));
-        }
-        String filename = java.util.UUID.randomUUID() + ext;
-        java.nio.file.Files.copy(file.getInputStream(),
-                uploadPath.resolve(filename),
-                java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-        return filename;
     }
 }

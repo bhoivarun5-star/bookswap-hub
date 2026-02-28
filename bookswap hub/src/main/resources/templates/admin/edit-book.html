@@ -58,9 +58,9 @@
             <form th:action="@{/admin/books/{id}/edit(id=${book.id})}" method="post" enctype="multipart/form-data">
 
                 <!-- Current image preview -->
-                <div class="form-group" th:if="${book.imagePath != null}">
+                <div class="form-group" th:if="${book.hasImage()}">
                     <label>Current Image</label>
-                    <img th:src="@{/uploads/{img}(img=${book.imagePath})}" alt="Book image"
+                    <img th:src="@{/books/image/{id}(id=${book.id})}" alt="Book image"
                         style="width:120px;height:120px;object-fit:cover;border-radius:10px;border:1px solid rgba(255,255,255,0.1)" />
                 </div>
 

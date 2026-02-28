@@ -19,9 +19,7 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(@NonNull ResourceHandlerRegistry registry) {
-        // Serve uploaded book images from the /uploads/** URL path
-        registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("file:uploads/");
+        // No filesystem resource handler needed — images served from DB
     }
 
     @Override

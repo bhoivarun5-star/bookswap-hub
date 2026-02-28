@@ -53,7 +53,7 @@ public class SecurityConfig {
                         .requestMatchers("/admin", "/admin/**").hasRole("ADMIN")
                         // ── Public book browsing (GET only) ─────────────────
                         .requestMatchers(org.springframework.http.HttpMethod.GET,
-                                "/books", "/books/{id:[0-9]+}")
+                                "/books", "/books/{id:[0-9]+}", "/books/image/{id:[0-9]+}")
                         .permitAll()
                         // ── Everything else requires login ───────────────────
                         .anyRequest().authenticated())

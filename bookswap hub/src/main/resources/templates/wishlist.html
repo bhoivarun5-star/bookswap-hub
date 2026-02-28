@@ -69,10 +69,10 @@
                 <!-- Book card link -->
                 <a th:href="@{/books/{id}(id=${item.book.id})}" class="book-card">
                     <div class="book-card-image">
-                        <img th:if="${item.book.imagePath != null}"
-                             th:src="@{/uploads/{img}(img=${item.book.imagePath})}"
+                        <img th:if="${item.book.hasImage()}"
+                             th:src="@{/books/image/{id}(id=${item.book.id})}"
                              th:alt="${item.book.title}" />
-                        <span th:unless="${item.book.imagePath != null}">📚</span>
+                        <span th:unless="${item.book.hasImage()}">📚</span>
                     </div>
                     <div class="book-card-body">
                         <div class="book-card-title" th:text="${item.book.title}">Title</div>
