@@ -7,6 +7,8 @@ services:
     envVars:
       - key: PORT
         value: 8080
+      - key: APP_BASE_URL
+        value: https://bookswap-hub.onrender.com
       - key: DATABASE_URL
         sync: false  # Set in Render dashboard
       - key: DATABASE_USERNAME
