@@ -19,6 +19,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Controller
@@ -55,8 +56,8 @@ public class BookController {
         }
         Book book = optBook.get();
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.parseMediaType(
-                book.getImageType() != null ? book.getImageType() : "image/jpeg"));
+        String imageType = Objects.requireNonNullElse(book.getImageType(), "image/jpeg");
+        headers.setContentType(MediaType.parseMediaType(imageType));
         headers.setCacheControl("max-age=86400");
         return new ResponseEntity<>(book.getImageData(), headers, HttpStatus.OK);
     }
@@ -68,7 +69,7 @@ public class BookController {
                             @RequestParam(required = false) BookCondition condition,
                             @RequestParam(required = false) BigDecimal minPrice,
                             @RequestParam(required = false) BigDecimal maxPrice,
-                            @RequestParam(required = false, defaultValue = "date_desc") String sort,
+                            @RequestParam(required = false, defaultValue = "distance") String sort,
                             Authentication authentication, Model model) {
         boolean isLoggedIn = authentication != null
                 && authentication.isAuthenticated()
