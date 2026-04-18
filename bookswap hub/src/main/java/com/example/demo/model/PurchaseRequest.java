@@ -31,6 +31,9 @@ public class PurchaseRequest {
     @OneToMany(mappedBy = "request", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChatMessage> chatMessages = new ArrayList<>();
 
+    @OneToOne(mappedBy = "request", cascade = CascadeType.ALL)
+    private SaleRecord saleRecord;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -90,5 +93,13 @@ public class PurchaseRequest {
 
     public void setCreatedAt(LocalDateTime t) {
         this.createdAt = t;
+    }
+
+    public SaleRecord getSaleRecord() {
+        return saleRecord;
+    }
+
+    public void setSaleRecord(SaleRecord saleRecord) {
+        this.saleRecord = saleRecord;
     }
 }

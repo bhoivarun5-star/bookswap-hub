@@ -50,7 +50,8 @@
                     <label for="email">Email Address</label>
                     <div class="input-wrapper">
                         <input type="email" id="email" name="email" class="form-control" placeholder="you@example.com"
-                            autocomplete="email" required />
+                            autocomplete="email" pattern="^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$"
+                            title="Enter a valid email address (example: name@example.com)." required />
                         <span class="input-icon">✉️</span>
                     </div>
                 </div>
@@ -59,7 +60,10 @@
                     <label for="password">Password</label>
                     <div class="input-wrapper">
                         <input type="password" id="password" name="password" class="form-control"
-                            placeholder="Minimum 6 characters" autocomplete="new-password" minlength="6" required />
+                            placeholder="Min 6 chars, 1 uppercase, 1 special" autocomplete="new-password" minlength="6"
+                            pattern="^(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{6,}$"
+                            title="Password must be at least 6 characters and include one uppercase letter and one special character."
+                            required />
                         <span class="input-icon">🔒</span>
                     </div>
                 </div>
@@ -68,10 +72,15 @@
                     <label for="confirmPassword">Confirm Password</label>
                     <div class="input-wrapper">
                         <input type="password" id="confirmPassword" name="confirmPassword" class="form-control"
-                            placeholder="Repeat your password" autocomplete="new-password" minlength="6" required />
+                            placeholder="Repeat your password" autocomplete="new-password" minlength="6"
+                            pattern="^(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{6,}$" required />
                         <span class="input-icon">🔑</span>
                     </div>
                 </div>
+
+                <p style="font-size: 0.86rem; margin-top: -4px; color: #94a3b8;">
+                    Use at least 6 characters with one uppercase letter and one special character.
+                </p>
 
                 <button type="submit" class="btn btn-primary">
                     Create Account &nbsp;→
@@ -89,9 +98,16 @@
 
     <!-- Client-side password confirmation -->
     <script>
+        const passwordPolicy = /^(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{6,}$/;
+
         document.querySelector('form').addEventListener('submit', function (e) {
             const pwd = document.getElementById('password').value;
             const cPwd = document.getElementById('confirmPassword').value;
+            if (!passwordPolicy.test(pwd)) {
+                e.preventDefault();
+                alert('Password must be at least 6 characters and include one uppercase letter and one special character.');
+                return;
+            }
             if (pwd !== cPwd) {
                 e.preventDefault();
                 alert('Passwords do not match. Please try again.');

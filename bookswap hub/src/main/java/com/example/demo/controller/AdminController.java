@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import com.example.demo.model.*;
 import com.example.demo.repository.BookRepository;
 import com.example.demo.repository.PurchaseRequestRepository;
+import com.example.demo.repository.SaleRecordRepository;
 import com.example.demo.repository.UserRepository;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -26,13 +27,16 @@ public class AdminController {
     private final UserRepository userRepository;
     private final BookRepository bookRepository;
     private final PurchaseRequestRepository purchaseRequestRepository;
+    private final SaleRecordRepository saleRecordRepository;
 
     public AdminController(UserRepository userRepository,
             BookRepository bookRepository,
-            PurchaseRequestRepository purchaseRequestRepository) {
+            PurchaseRequestRepository purchaseRequestRepository,
+            SaleRecordRepository saleRecordRepository) {
         this.userRepository = userRepository;
         this.bookRepository = bookRepository;
         this.purchaseRequestRepository = purchaseRequestRepository;
+        this.saleRecordRepository = saleRecordRepository;
     }
 
     // ─── Dashboard ────────────────────────────────────────────────────────────
@@ -41,12 +45,15 @@ public class AdminController {
         List<User> users = userRepository.findAllByRoleNot("ROLE_ADMIN");
         List<Book> books = bookRepository.findAll();
         List<PurchaseRequest> requests = purchaseRequestRepository.findAll();
+        List<SaleRecord> saleRecords = saleRecordRepository.findAllByOrderByReceivedAtDesc();
 
         long totalUsers  = users.size();
         long totalBooks  = books.size();
         long activeBooks = books.stream().filter(b -> !b.isSold()).count();
         long soldBooks   = books.stream().filter(Book::isSold).count();
         long totalRequests = requests.size();
+        long totalSaleRecords = saleRecords.size();
+        BigDecimal totalSalesAmount = saleRecordRepository.getTotalSalesAmount();
 
         // ─── Chart: last 14 day labels ───────────────────────────────────────
         LocalDate today = LocalDate.now();
@@ -98,6 +105,9 @@ public class AdminController {
         model.addAttribute("activeBooks", activeBooks);
         model.addAttribute("soldBooks",   soldBooks);
         model.addAttribute("totalRequests", totalRequests);
+        model.addAttribute("totalSaleRecords", totalSaleRecords);
+        model.addAttribute("totalSalesAmount", totalSalesAmount);
+        model.addAttribute("saleRecords", saleRecords);
         // Chart data
         model.addAttribute("chartDays",      chartDays);
         model.addAttribute("chartRegData",   chartRegData);

@@ -19,7 +19,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 @Controller
@@ -56,7 +55,7 @@ public class BookController {
         }
         Book book = optBook.get();
         HttpHeaders headers = new HttpHeaders();
-        String imageType = Objects.requireNonNullElse(book.getImageType(), "image/jpeg");
+        String imageType = Optional.ofNullable(book.getImageType()).orElse("image/jpeg");
         headers.setContentType(MediaType.parseMediaType(imageType));
         headers.setCacheControl("max-age=86400");
         return new ResponseEntity<>(book.getImageData(), headers, HttpStatus.OK);

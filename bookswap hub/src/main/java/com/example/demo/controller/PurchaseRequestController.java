@@ -10,6 +10,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 
 @Controller
@@ -74,6 +75,7 @@ public class PurchaseRequestController {
                 && authentication.isAuthenticated();
         model.addAttribute("isLoggedIn", isLoggedIn);
         model.addAttribute("requests", requestService.getRequestsForOwner(current));
+        model.addAttribute("totalOfflineEarnings", requestService.getTotalOfflineEarnings(current));
         return "books/owner-requests";
     }
 
@@ -97,6 +99,40 @@ public class PurchaseRequestController {
         try {
             requestService.rejectRequest(id, getCurrentUser(authentication));
             redirectAttributes.addFlashAttribute("successMessage", "Request rejected.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/owner/requests";
+    }
+
+    // ─── Record offline payment ─────────────────────────────────────────────
+    @PostMapping("/requests/{id}/record-payment")
+    public String recordOfflinePayment(@PathVariable Long id,
+            @RequestParam BigDecimal amount,
+            @RequestParam(required = false) String notes,
+            Authentication authentication,
+            RedirectAttributes redirectAttributes) {
+        try {
+            requestService.recordOfflinePayment(id, getCurrentUser(authentication), amount, notes);
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Offline payment recorded and listing marked as sold.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/owner/requests";
+    }
+
+    // ─── Update recorded offline payment ───────────────────────────────────
+    @PostMapping("/requests/{id}/update-payment")
+    public String updateOfflinePayment(@PathVariable Long id,
+            @RequestParam BigDecimal amount,
+            @RequestParam(required = false) String notes,
+            Authentication authentication,
+            RedirectAttributes redirectAttributes) {
+        try {
+            requestService.updateOfflinePayment(id, getCurrentUser(authentication), amount, notes);
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Received amount updated successfully.");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }

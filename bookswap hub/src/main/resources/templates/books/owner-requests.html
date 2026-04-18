@@ -50,6 +50,18 @@
             <p>Buyers interested in your books — approve or reject their requests.</p>
         </div>
 
+        <div class="table-card" style="margin-bottom:1.1rem;">
+            <table class="data-table">
+                <tbody>
+                    <tr>
+                        <td style="width:220px;font-weight:700;color:#c4b5fd;">Total Offline Earnings</td>
+                        <td style="font-size:1.05rem;font-weight:800;color:#34d399;"
+                            th:text="'₹' + ${#numbers.formatDecimal(totalOfflineEarnings, 1, 2)}">₹0.00</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
         <div class="flash-success" th:if="${successMessage}">✅ <span th:text="${successMessage}"></span></div>
         <div class="flash-error" th:if="${errorMessage}">❌ <span th:text="${errorMessage}"></span></div>
 
@@ -66,6 +78,8 @@
                         <th>Book</th>
                         <th>From</th>
                         <th>Message</th>
+                        <th>Receivable</th>
+                        <th>Payment</th>
                         <th>Status</th>
                         <th>Date</th>
                         <th>Actions</th>
@@ -82,6 +96,18 @@
                         </td>
                         <td style="font-weight:600" th:text="${req.requester.username}">Buyer</td>
                         <td style="max-width:180px;color:#94a3b8;font-size:0.85rem" th:text="${req.message}">Message
+                        </td>
+                        <td style="font-weight:700;color:#34d399;"
+                            th:text="'₹' + ${#numbers.formatDecimal(req.book.price, 1, 2)}">₹0.00</td>
+                        <td>
+                            <span th:if="${req.saleRecord != null}" class="badge badge-approved"
+                                th:text="'Received ₹' + ${#numbers.formatDecimal(req.saleRecord.amount, 1, 2)}">Paid</span>
+                            <span th:if="${req.saleRecord != null}" style="display:block;font-size:0.76rem;color:#64748b;margin-top:0.25rem;"
+                                  th:text="${#temporals.format(req.saleRecord.receivedAt, 'dd MMM yyyy HH:mm')}">Date</span>
+                                <span th:if="${req.saleRecord != null and req.saleRecord.notes != null and !#strings.isEmpty(req.saleRecord.notes)}"
+                                    style="display:block;font-size:0.76rem;color:#64748b;margin-top:0.2rem;"
+                                    th:text="${req.saleRecord.notes}">Notes</span>
+                            <span th:if="${req.saleRecord == null}" class="badge badge-pending">Not Recorded</span>
                         </td>
                         <td>
                             <span class="badge" th:classappend="${req.status.name() == 'PENDING'} ? 'badge-pending' :
@@ -103,6 +129,44 @@
                             <a th:if="${req.status.name() == 'APPROVED'}"
                                th:href="@{/chat/{id}(id=${req.id})}"
                                class="action-btn-chat">💬 Chat</a>
+                            <form th:if="${req.status.name() == 'APPROVED' and req.saleRecord == null}"
+                                  th:action="@{/requests/{id}/record-payment(id=${req.id})}"
+                                  method="post"
+                                  style="display:flex;gap:0.35rem;align-items:center;flex-wrap:wrap;margin-top:0.4rem;">
+                                <input type="number"
+                                       name="amount"
+                                       min="1"
+                                       step="0.01"
+                                       th:value="${req.book.price}"
+                                       style="width:105px;padding:0.34rem 0.45rem;border-radius:7px;border:1px solid #475569;background:#0f172a;color:#e2e8f0;" />
+                                <input type="text"
+                                       name="notes"
+                                       maxlength="200"
+                                       placeholder="Offline payment notes"
+                                       style="width:180px;padding:0.34rem 0.45rem;border-radius:7px;border:1px solid #475569;background:#0f172a;color:#e2e8f0;" />
+                                <button type="submit" class="action-btn action-btn-approve">💵 Record Payment</button>
+                            </form>
+                            <span th:if="${req.saleRecord != null}" style="display:block;font-size:0.8rem;color:#34d399;margin-top:0.4rem;">
+                                Payment recorded
+                            </span>
+                            <form th:if="${req.saleRecord != null}"
+                                  th:action="@{/requests/{id}/update-payment(id=${req.id})}"
+                                  method="post"
+                                  style="display:flex;gap:0.35rem;align-items:center;flex-wrap:wrap;margin-top:0.4rem;">
+                                <input type="number"
+                                       name="amount"
+                                       min="1"
+                                       step="0.01"
+                                       th:value="${req.saleRecord.amount}"
+                                       style="width:105px;padding:0.34rem 0.45rem;border-radius:7px;border:1px solid #475569;background:#0f172a;color:#e2e8f0;" />
+                                <input type="text"
+                                       name="notes"
+                                       maxlength="200"
+                                       placeholder="Update notes"
+                                       th:value="${req.saleRecord.notes}"
+                                       style="width:180px;padding:0.34rem 0.45rem;border-radius:7px;border:1px solid #475569;background:#0f172a;color:#e2e8f0;" />
+                                <button type="submit" class="action-btn action-btn-edit">✏️ Update Amount</button>
+                            </form>
                             <span th:if="${req.status.name() == 'REJECTED'}"
                                 style="color:#64748b;font-size:0.82rem;">—</span>
                         </td>
