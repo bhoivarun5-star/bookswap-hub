@@ -74,7 +74,7 @@
         <form id="chatForm" onsubmit="return false;" style="flex:1;display:flex;gap:0.4rem;min-width:0;">
             <input type="text" id="chatInput" class="chat-input" placeholder="Type a message…"
                    maxlength="1000" autocomplete="off" inputmode="text" enterkeyhint="send" />
-            <button type="submit" class="chat-send-btn" onclick="sendMessage()">
+            <button type="submit" class="chat-send-btn" id="chatSendBtn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
                      stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
                     <line x1="22" y1="2" x2="11" y2="13"/>
@@ -92,6 +92,9 @@
 
         const msgContainer = document.getElementById('chatMessages');
         const input = document.getElementById('chatInput');
+        const form = document.getElementById('chatForm');
+        const sendBtn = document.getElementById('chatSendBtn');
+        let isSending = false;
 
         // ── scroll to bottom ──────────────────────────────────────────────────
         function scrollBottom(smooth) {
@@ -136,11 +139,19 @@
 
         // ── send message ──────────────────────────────────────────────────────
         async function sendMessage() {
+            if (isSending) return;
             const text = input.value.trim();
             if (!text) return;
+            isSending = true;
+            sendBtn.disabled = true;
             input.value = '';
             input.focus();
-            await postMessage(text);
+            try {
+                await postMessage(text);
+            } finally {
+                isSending = false;
+                sendBtn.disabled = false;
+            }
         }
 
         const CSRF_TOKEN  = document.querySelector('meta[name="_csrf"]').getAttribute('content');
@@ -164,9 +175,10 @@
             } catch (e) { console.error(e); }
         }
 
-        // ── enter key ─────────────────────────────────────────────────────────
-        input.addEventListener('keydown', e => {
-            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+        // ── single send trigger ───────────────────────────────────────────────
+        form.addEventListener('submit', e => {
+            e.preventDefault();
+            sendMessage();
         });
 
         // ── mobile keyboard handling ──────────────────────────────────────────
