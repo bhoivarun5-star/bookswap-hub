@@ -71,10 +71,10 @@
     <!-- ── Input Bar ───────────────────────────────────────────────────────── -->
     <footer class="chat-inputbar">
         <button type="button" class="chat-loc-btn" onclick="shareLocation()" title="Share your location">📍</button>
-        <form id="chatForm" onsubmit="return false;" style="flex:1;display:flex;gap:0.4rem;min-width:0;">
+        <form id="chatForm" style="flex:1;display:flex;gap:0.4rem;min-width:0;">
             <input type="text" id="chatInput" class="chat-input" placeholder="Type a message…"
                    maxlength="1000" autocomplete="off" inputmode="text" enterkeyhint="send" />
-            <button type="submit" class="chat-send-btn" id="chatSendBtn">
+            <button type="button" class="chat-send-btn" id="chatSendBtn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
                      stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
                     <line x1="22" y1="2" x2="11" y2="13"/>
@@ -92,7 +92,6 @@
 
         const msgContainer = document.getElementById('chatMessages');
         const input = document.getElementById('chatInput');
-        const form = document.getElementById('chatForm');
         const sendBtn = document.getElementById('chatSendBtn');
         let isSending = false;
 
@@ -176,9 +175,18 @@
         }
 
         // ── single send trigger ───────────────────────────────────────────────
-        form.addEventListener('submit', e => {
+        // Button click to send message
+        sendBtn.addEventListener('click', e => {
             e.preventDefault();
             sendMessage();
+        });
+
+        // Enter key to send message (no Shift+Enter for multiline)
+        input.addEventListener('keydown', e => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
         });
 
         // ── mobile keyboard handling ──────────────────────────────────────────
