@@ -2,6 +2,7 @@ package com.example.demo.model;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -113,6 +114,29 @@ public class Book {
 
     public void setPrice(BigDecimal price) {
         this.price = price;
+    }
+
+    public BigDecimal getEstimatedMarketPrice() {
+        if (price == null) {
+            return null;
+        }
+
+        BigDecimal multiplier = switch (condition) {
+            case NEW -> new BigDecimal("1.35");
+            case LIKE_NEW -> new BigDecimal("1.20");
+            case OLD -> new BigDecimal("1.10");
+            default -> new BigDecimal("1.15");
+        };
+
+        return price.multiply(multiplier).setScale(0, RoundingMode.HALF_UP);
+    }
+
+    public BigDecimal getEstimatedSavings() {
+        BigDecimal marketPrice = getEstimatedMarketPrice();
+        if (price == null || marketPrice == null) {
+            return null;
+        }
+        return marketPrice.subtract(price).max(BigDecimal.ZERO).setScale(0, RoundingMode.HALF_UP);
     }
 
     public String getImagePath() {

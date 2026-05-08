@@ -191,7 +191,21 @@
                     <div class="book-card-author">by <span th:text="${book.author}">Author</span></div>
 
                     <div class="book-card-meta">
-                        <span class="book-price" th:text="'₹' + ${book.price}">₹0</span>
+                        <div style="display:flex; flex-direction:column; gap:0.35rem; width:100%;">
+                            <div style="display:flex; gap:0.6rem; flex-wrap:wrap; align-items:baseline;">
+                                <span class="book-price" th:text="'Actual: ₹' + ${book.price}">Actual: ₹0</span>
+                                <span style="font-size:0.85rem; color:#94a3b8;">
+                                    Market: <strong style="color:#c4b5fd;" th:text="'₹' + ${book.estimatedMarketPrice}">₹0</strong>
+                                </span>
+                            </div>
+                            <div th:if="${book.estimatedSavings != null}"
+                                 style="font-size:0.78rem; color:#6ee7b7; font-weight:500;">
+                                Estimated savings vs market: <span th:text="'₹' + ${book.estimatedSavings}">₹0</span>
+                            </div>
+                            <div style="font-size:0.72rem; color:#94a3b8;">
+                                Estimated market price based on similar platform listings.
+                            </div>
+                        </div>
                         <span class="badge badge-category" th:text="${book.category.displayName}">Category</span>
                         <span class="badge" th:classappend="${book.condition.name() == 'NEW'} ? 'badge-new' :
                                           (${book.condition.name() == 'LIKE_NEW'} ? 'badge-like-new' : 'badge-old')"
