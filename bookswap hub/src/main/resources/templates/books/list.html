@@ -198,12 +198,15 @@
                                     Market: <strong style="color:#c4b5fd;" th:text="'₹' + ${book.estimatedMarketPrice}">₹0</strong>
                                 </span>
                             </div>
-                            <div th:if="${book.estimatedSavings != null}"
-                                 style="font-size:0.78rem; color:#6ee7b7; font-weight:500;">
-                                Estimated savings vs market: <span th:text="'₹' + ${book.estimatedSavings}">₹0</span>
+                            <div th:if="${book.estimatedMarketGap != null and book.estimatedMarketGap != 0}"
+                                 style="font-size:0.78rem; font-weight:500;"
+                                 th:styleappend="${book.estimatedMarketGap > 0} ? 'color:#6ee7b7;' : 'color:#fca5a5;'">
+                                <span th:if="${book.estimatedMarketGap > 0}">Estimated above listing by </span>
+                                <span th:unless="${book.estimatedMarketGap > 0}">Estimated below listing by </span>
+                                <span th:text="'₹' + ${book.estimatedMarketGap > 0 ? book.estimatedMarketGap : book.estimatedMarketGap.negate()}">₹0</span>
                             </div>
                             <div style="font-size:0.72rem; color:#94a3b8;">
-                                Estimated market price based on similar platform listings.
+                                Estimated market price adjusted for book condition.
                             </div>
                         </div>
                         <span class="badge badge-category" th:text="${book.category.displayName}">Category</span>

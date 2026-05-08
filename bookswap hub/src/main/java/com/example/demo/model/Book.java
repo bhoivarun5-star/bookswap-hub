@@ -122,21 +122,21 @@ public class Book {
         }
 
         BigDecimal multiplier = switch (condition) {
-            case NEW -> new BigDecimal("1.35");
-            case LIKE_NEW -> new BigDecimal("1.20");
-            case OLD -> new BigDecimal("1.10");
-            default -> new BigDecimal("1.15");
+            case NEW -> new BigDecimal("1.00");
+            case LIKE_NEW -> new BigDecimal("0.90");
+            case OLD -> new BigDecimal("0.75");
+            default -> new BigDecimal("0.85");
         };
 
         return price.multiply(multiplier).setScale(0, RoundingMode.HALF_UP);
     }
 
-    public BigDecimal getEstimatedSavings() {
+    public BigDecimal getEstimatedMarketGap() {
         BigDecimal marketPrice = getEstimatedMarketPrice();
         if (price == null || marketPrice == null) {
             return null;
         }
-        return marketPrice.subtract(price).max(BigDecimal.ZERO).setScale(0, RoundingMode.HALF_UP);
+        return marketPrice.subtract(price).setScale(0, RoundingMode.HALF_UP);
     }
 
     public String getImagePath() {
